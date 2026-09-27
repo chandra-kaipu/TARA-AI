@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ShieldAlert, Check, X, Terminal, Globe, Monitor, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -9,6 +9,18 @@ export default function ToolConfirmationModal({
   isOpen
 }) {
   const [autoApproveNext, setAutoApproveNext] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && isOpen && proposal) {
+        onReject(proposal);
+      }
+    };
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, proposal, onReject]);
 
   if (!isOpen || !proposal) return null;
 
@@ -27,26 +39,40 @@ export default function ToolConfirmationModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs transition-opacity"
+      onClick={() => onReject(proposal)}
+    >
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 15 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 15 }}
-        className="w-full max-w-md bg-[#FFFFFF] dark:bg-[#2E2C29] border border-[#DA7756]/30 rounded-xl shadow-2xl overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-md bg-[#FFFFFF] dark:bg-[#2E2C29] border border-[#DA7756]/30 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150"
       >
         {/* Banner */}
-        <div className="flex items-center gap-3 p-4 bg-[#DA7756]/10 dark:bg-[#DA7756]/20 border-b border-[#DA7756]/20">
-          <div className="p-2 rounded-lg bg-[#DA7756] text-white">
-            <ShieldAlert className="w-5 h-5" />
+        <div className="flex items-center justify-between p-4 bg-[#DA7756]/10 dark:bg-[#DA7756]/20 border-b border-[#DA7756]/20">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-[#DA7756] text-white">
+              <ShieldAlert className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-[#1F1E1D] dark:text-[#F5F4EF]">
+                Permission Confirmation Required
+              </h3>
+              <p className="text-xs text-[#6B675F] dark:text-[#A39E93]">
+                TARA is requesting permission to execute an external tool
+              </p>
+            </div>
           </div>
-          <div>
-            <h3 className="text-sm font-semibold text-[#1F1E1D] dark:text-[#F5F4EF]">
-              Permission Confirmation Required
-            </h3>
-            <p className="text-xs text-[#6B675F] dark:text-[#A39E93]">
-              TARA is requesting permission to execute an external tool
-            </p>
-          </div>
+          <button
+            type="button"
+            onClick={() => onReject(proposal)}
+            className="p-1.5 rounded-lg text-[#6B675F] hover:text-[#1F1E1D] dark:hover:text-white hover:bg-[#DA7756]/15 transition-colors cursor-pointer"
+            title="Deny & Cancel (Esc)"
+          >
+            <X className="w-4.5 h-4.5" />
+          </button>
         </div>
 
         {/* Body */}
@@ -96,21 +122,26 @@ export default function ToolConfirmationModal({
         </div>
 
         {/* Buttons */}
-        <div className="flex items-center justify-end gap-2.5 p-4 border-t border-[#E3E0D8] dark:border-[#423F3A] bg-[#F5F4EF] dark:bg-[#262523]">
-          <button
-            onClick={() => onReject(proposal)}
-            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium rounded-lg text-[#1F1E1D] dark:text-[#F5F4EF] bg-[#EDEAE1] dark:bg-[#383531] hover:bg-[#E3E0D8] dark:hover:bg-[#423F3A] transition-colors cursor-pointer"
-          >
-            <X className="w-3.5 h-3.5" />
-            Deny Permission
-          </button>
-          <button
-            onClick={() => onConfirm(proposal, autoApproveNext)}
-            className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-lg text-white bg-[#DA7756] hover:bg-[#C4633F] transition-colors shadow-sm cursor-pointer"
-          >
-            <Check className="w-3.5 h-3.5" />
-            Approve & Execute
-          </button>
+        <div className="flex items-center justify-between p-4 border-t border-[#E3E0D8] dark:border-[#423F3A] bg-[#F5F4EF] dark:bg-[#262523]">
+          <span className="text-xs text-[#6B675F] dark:text-[#A39E93]">
+            Press <kbd className="px-1.5 py-0.5 rounded bg-[#EDEAE1] dark:bg-[#383531] font-mono text-[10px]">Esc</kbd> to deny
+          </span>
+          <div className="flex items-center gap-2.5">
+            <button
+              onClick={() => onReject(proposal)}
+              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium rounded-xl text-[#6B675F] hover:text-[#D04F4F] hover:bg-[#EDEAE1] dark:hover:bg-[#383531] transition-colors cursor-pointer"
+            >
+              <X className="w-3.5 h-3.5" />
+              Deny & Cancel (Esc)
+            </button>
+            <button
+              onClick={() => onConfirm(proposal, autoApproveNext)}
+              className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-xl text-white bg-[#DA7756] hover:bg-[#C4633F] transition-colors shadow-xs cursor-pointer"
+            >
+              <Check className="w-3.5 h-3.5" />
+              Approve & Execute
+            </button>
+          </div>
         </div>
       </motion.div>
     </div>

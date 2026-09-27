@@ -22,11 +22,21 @@ import {
 } from 'lucide-react';
 import { api } from '../services/api';
 
-export default function ParentalPortal() {
+export default function ParentalPortal({ setActiveTab: navigateTab }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState('');
   const [verifying, setVerifying] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && !isAuthenticated && navigateTab) {
+        navigateTab('dashboard');
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isAuthenticated, navigateTab]);
 
   const [summary, setSummary] = useState(null);
   const [webLogs, setWebLogs] = useState([]);
@@ -145,6 +155,16 @@ export default function ParentalPortal() {
               {verifying ? 'Unlocking...' : 'Unlock Parental Dashboard'}
             </button>
           </form>
+
+          {navigateTab && (
+            <button
+              type="button"
+              onClick={() => navigateTab('dashboard')}
+              className="w-full py-2.5 px-4 rounded-xl border border-[#E3E0D8] dark:border-[#423F3A] text-xs font-semibold text-[#6B675F] hover:text-[#1F1E1D] dark:hover:text-[#F5F4EF] hover:bg-[#F5F4EF] dark:hover:bg-[#262523] transition-colors cursor-pointer"
+            >
+              ← Cancel & Return to Dashboard (Esc)
+            </button>
+          )}
 
           <div className="pt-4 border-t border-[#E3E0D8] dark:border-[#423F3A] text-[11px] text-[#6B675F] dark:text-[#A39E93]">
             Default security PIN is set to <strong className="font-mono text-[#DA7756]">1234</strong>. Can be customized in Settings.

@@ -383,5 +383,49 @@
     "document_id": "67928258-d223-426f-9f8d-2a7382de4711",
     "course_id": "sample-cs101",
     "filename": "🎙️ Introduction to Attention Mechanisms (lecture_sample.wav)"
+  },
+  {
+    "id": "c57ce20f-fc1c-4e00-a698-abe0926f0ce1",
+    "chunk_index": 0,
+    "page_number": 1,
+    "section_title": "Page 1",
+    "content": "CS 101 Advanced Lecture Notes: Deep Neural Architecture Section 1: Transformer Attention Mechanism The core mechanism behind modern large language models is multi-head self-attention. Attention computes queries (Q), keys (K), and values (V) using linear projections. The scaled dot-product attention formula is Attention(Q, K, V) = softmax(Q * K^T / sqrt(d_k)) * V. This allows models to capture long-range token dependencies in parallel across sequences.",
+    "char_count": 455,
+    "document_id": "a2bc521a-a476-4ce8-9f48-ddcecdd738ac",
+    "course_id": "sample-cs101",
+    "filename": "test_lecture_notes.pdf"
+  },
+  {
+    "id": "254ebdbf-0f89-4f09-a874-1739c5c0457d",
+    "chunk_index": 1,
+    "page_number": 2,
+    "section_title": "Page 2",
+    "content": "Section 2: Quantization and Edge Inference Model quantization reduces numerical precision of weights from FP32 or FP16 down to INT8 or INT4. Techniques such as AWQ (Activation-aware Weight Quantization) and GPTQ minimize perplexity degradation while shrinking memory footprint by 75%, allowing local execution on commodity hardware. The course practical lab requires implementing INT8 dynamic quantization in PyTorch.",
+    "char_count": 417,
+    "document_id": "a2bc521a-a476-4ce8-9f48-ddcecdd738ac",
+    "course_id": "sample-cs101",
+    "filename": "test_lecture_notes.pdf"
+  },
+  {
+    "id": "d915035f-dd86-4408-b739-658dcb900812",
+    "chunk_index": 0,
+    "page_number": 1,
+    "section_title": "# Audio Lecture Transcription: Introduction To Attention Mechanisms",
+    "content": "# Audio Lecture Transcription: Introduction To Attention Mechanisms > **Lecture Audio Note:** lecture_sample.wav (15.7 KB). Transcribed and grounded for TARA vector study. ### Section 1: Lecture Introduction & Core Concepts [00:00 - 15:00] In today's lecture on Introduction To Attention Mechanisms, the professor established the foundational principles, discussing architecture considerations and practical lab requirements. ### Section 2: Detailed Mathematical Breakdown [15:00 - 35:00] The lecture examined algorithmic mechanics and formulas. Key derivations require verifying dimensional consistency and computational efficiency. ### Section 3: Summary Takeaways & Lab Tasks [35:00 - 50:00] Students",
+    "char_count": 703,
+    "document_id": "a013ef00-fb13-420e-847b-97a5f8cde1ac",
+    "course_id": "sample-cs101",
+    "filename": "🎙️ Introduction to Attention Mechanisms (lecture_sample.wav)"
+  },
+  {
+    "id": "51e57d3f-34b5-4bad-ad5f-1341a0cd0e6a",
+    "chunk_index": 1,
+    "page_number": 1,
+    "section_title": "# Audio Lecture Transcription: Introduction To Attention Mechanisms",
+    "content": "derivations require verifying dimensional consistency and computational efficiency. ### Section 3: Summary Takeaways & Lab Tasks [35:00 - 50:00] Students are expected to review this transcription, test concepts using practice flashcards, and formulate questions for the upcoming revision session.",
+    "char_count": 296,
+    "document_id": "a013ef00-fb13-420e-847b-97a5f8cde1ac",
+    "course_id": "sample-cs101",
+    "filename": "🎙️ Introduction to Attention Mechanisms (lecture_sample.wav)"
   }
 ]

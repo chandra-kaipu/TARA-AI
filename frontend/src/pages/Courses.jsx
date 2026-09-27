@@ -15,7 +15,8 @@ import {
   Mic,
   MicOff,
   Radio,
-  Volume2
+  Volume2,
+  X
 } from 'lucide-react';
 import { api } from '../services/api';
 
@@ -84,6 +85,21 @@ export default function Courses({
       setIsRecording(false);
     }
   };
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setShowCreateModal(false);
+        setInspectDoc(null);
+        if (showAudioModal) {
+          stopRecordingAudio();
+          setShowAudioModal(false);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showAudioModal, isRecording, recorderInstance]);
 
   const handleAudioUpload = async (e) => {
     e.preventDefault();
@@ -455,14 +471,32 @@ export default function Courses({
 
       {/* Create Course Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
-          <div className="w-full max-w-lg bg-[#FFFFFF] dark:bg-[#2E2C29] border border-[#E3E0D8] dark:border-[#423F3A] rounded-2xl shadow-2xl p-7">
-            <h3 className="font-serif-claude text-xl font-bold text-[#1F1E1D] dark:text-[#F5F4EF] mb-1.5">
-              Create Course Knowledge Base
-            </h3>
-            <p className="text-sm text-[#6B675F] dark:text-[#A39E93] mb-5">
-              Create an isolated vector index space for your course materials.
-            </p>
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs transition-opacity"
+          onClick={() => setShowCreateModal(false)}
+        >
+          <div 
+            className="w-full max-w-lg bg-[#FFFFFF] dark:bg-[#2E2C29] border border-[#E3E0D8] dark:border-[#423F3A] rounded-2xl shadow-2xl p-7 animate-in fade-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-3 mb-4 border-b border-[#E3E0D8] dark:border-[#423F3A]">
+              <div>
+                <h3 className="font-serif-claude text-xl font-bold text-[#1F1E1D] dark:text-[#F5F4EF]">
+                  Create Course Knowledge Base
+                </h3>
+                <p className="text-xs text-[#6B675F] dark:text-[#A39E93] mt-0.5">
+                  Create an isolated vector index space for your course materials.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowCreateModal(false)}
+                className="p-1.5 rounded-xl border border-[#E3E0D8] dark:border-[#423F3A] text-[#6B675F] hover:text-[#1F1E1D] dark:hover:text-[#F5F4EF] hover:bg-[#F5F4EF] dark:hover:bg-[#383531] transition-colors cursor-pointer"
+                title="Cancel / Close (Esc)"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
 
             <form onSubmit={handleCreateCourse} className="space-y-4">
               <div>
@@ -524,20 +558,23 @@ export default function Courses({
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-3">
-                <button
-                  type="button"
-                  onClick={() => setShowCreateModal(false)}
-                  className="px-4 py-2 text-sm font-medium rounded-xl text-[#6B675F] hover:bg-[#EDEAE1] dark:hover:bg-[#383531] transition-colors cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 text-sm font-semibold rounded-xl bg-[#DA7756] hover:bg-[#C4633F] text-white transition-colors cursor-pointer shadow-xs"
-                >
-                  Create Knowledge Base
-                </button>
+              <div className="flex items-center justify-between pt-3 border-t border-[#E3E0D8]/70 dark:border-[#423F3A]/70">
+                <span className="text-xs text-[#6B675F] dark:text-[#A39E93]">Press <kbd className="px-1 py-0.5 rounded bg-[#EDEAE1] dark:bg-[#383531] font-mono text-[10px]">Esc</kbd> to cancel</span>
+                <div className="flex items-center gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateModal(false)}
+                    className="px-4 py-2 text-sm font-medium rounded-xl text-[#6B675F] hover:bg-[#EDEAE1] dark:hover:bg-[#383531] transition-colors cursor-pointer"
+                  >
+                    Cancel (Esc)
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2 text-sm font-semibold rounded-xl bg-[#DA7756] hover:bg-[#C4633F] text-white transition-colors cursor-pointer shadow-xs"
+                  >
+                    Create Knowledge Base
+                  </button>
+                </div>
               </div>
             </form>
           </div>
@@ -546,8 +583,14 @@ export default function Courses({
 
       {/* Inspect Document Chunks Modal */}
       {inspectDoc && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
-          <div className="w-full max-w-3xl max-h-[85vh] bg-[#FFFFFF] dark:bg-[#2E2C29] border border-[#E3E0D8] dark:border-[#423F3A] rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs transition-opacity"
+          onClick={() => setInspectDoc(null)}
+        >
+          <div 
+            className="w-full max-w-3xl max-h-[85vh] bg-[#FFFFFF] dark:bg-[#2E2C29] border border-[#E3E0D8] dark:border-[#423F3A] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
             {/* Modal Header */}
             <div className="p-6 border-b border-[#E3E0D8] dark:border-[#423F3A] flex items-center justify-between">
               <div>
@@ -563,10 +606,12 @@ export default function Courses({
               </div>
 
               <button
+                type="button"
                 onClick={() => setInspectDoc(null)}
-                className="px-3.5 py-1.5 rounded-lg border border-[#E3E0D8] dark:border-[#423F3A] text-xs font-semibold text-[#6B675F] hover:text-[#1F1E1D] dark:hover:text-[#F5F4EF] hover:bg-[#F5F4EF] dark:hover:bg-[#383531] cursor-pointer"
+                className="p-2 rounded-xl border border-[#E3E0D8] dark:border-[#423F3A] text-[#6B675F] hover:text-[#1F1E1D] dark:hover:text-[#F5F4EF] hover:bg-[#F5F4EF] dark:hover:bg-[#383531] transition-colors cursor-pointer"
+                title="Cancel / Close (Esc)"
               >
-                Close
+                <X className="w-5 h-5" />
               </button>
             </div>
 
@@ -625,31 +670,59 @@ export default function Courses({
                   ))
               )}
             </div>
+
+            {/* Modal Footer with Close Action */}
+            <div className="p-4 border-t border-[#E3E0D8] dark:border-[#423F3A] flex items-center justify-between bg-[#F5F4EF]/50 dark:bg-[#262523]/50">
+              <span className="text-xs text-[#6B675F] dark:text-[#A39E93]">Press <kbd className="px-1.5 py-0.5 rounded bg-[#EDEAE1] dark:bg-[#383531] font-mono text-[10px]">Esc</kbd> to dismiss</span>
+              <button
+                type="button"
+                onClick={() => setInspectDoc(null)}
+                className="px-5 py-2 text-xs font-bold rounded-xl bg-[#1F1E1D] dark:bg-[#F5F4EF] text-white dark:text-[#1F1E1D] hover:opacity-90 transition-opacity cursor-pointer shadow-xs"
+              >
+                Close Inspector (Esc)
+              </button>
+            </div>
           </div>
         </div>
       )}
 
       {/* Audio Lecture Ingestion Modal */}
       {showAudioModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
-          <div className="w-full max-w-lg bg-[#FFFFFF] dark:bg-[#2E2C29] border border-[#E3E0D8] dark:border-[#423F3A] rounded-3xl p-6 shadow-2xl space-y-5">
-            <div className="flex items-center justify-between pb-3 border-b border-[#E3E0D8] dark:border-[#423F3A]">
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs transition-opacity"
+          onClick={() => {
+            stopRecordingAudio();
+            setShowAudioModal(false);
+          }}
+        >
+          <div 
+            className="w-full max-w-lg bg-[#FFFFFF] dark:bg-[#2E2C29] border border-[#E3E0D8] dark:border-[#423F3A] rounded-3xl p-6 md:p-7 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-3.5 border-b border-[#E3E0D8] dark:border-[#423F3A]">
               <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-[#DA7756]/15 text-[#DA7756]">
+                <div className="p-2.5 rounded-2xl bg-[#DA7756]/15 text-[#DA7756]">
                   <Mic className="w-5 h-5" />
                 </div>
-                <h3 className="font-serif-claude text-xl font-bold text-[#1F1E1D] dark:text-[#F5F4EF]">
-                  Ingest Audio Lecture
-                </h3>
+                <div>
+                  <h3 className="font-serif-claude text-xl font-bold text-[#1F1E1D] dark:text-[#F5F4EF]">
+                    Ingest Audio Lecture
+                  </h3>
+                  <p className="text-xs text-[#6B675F] dark:text-[#A39E93] font-sans font-normal">
+                    Record microphone or upload spoken lecture audio
+                  </p>
+                </div>
               </div>
               <button
+                type="button"
                 onClick={() => {
                   stopRecordingAudio();
                   setShowAudioModal(false);
                 }}
-                className="text-xs text-[#6B675F] hover:text-[#1F1E1D] dark:hover:text-white cursor-pointer"
+                className="p-2 rounded-xl border border-[#E3E0D8] dark:border-[#423F3A] text-[#6B675F] hover:text-[#1F1E1D] dark:hover:text-[#F5F4EF] hover:bg-[#F5F4EF] dark:hover:bg-[#383531] transition-colors cursor-pointer"
+                title="Cancel / Close (Esc)"
               >
-                ✕
+                <X className="w-5 h-5" />
               </button>
             </div>
 
@@ -721,22 +794,28 @@ export default function Courses({
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-3">
-                <button
-                  type="button"
-                  onClick={() => setShowAudioModal(false)}
-                  className="px-4 py-2 text-xs font-medium rounded-xl text-[#6B675F] hover:bg-[#EDEAE1] dark:hover:bg-[#383531] transition-colors cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={!audioFile || audioUploading}
-                  className="px-5 py-2 text-xs font-bold rounded-xl bg-[#DA7756] hover:bg-[#C4633F] text-white transition-colors cursor-pointer shadow-xs disabled:opacity-40 flex items-center gap-1.5"
-                >
-                  {audioUploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
-                  {audioUploading ? 'Transcribing & Indexing...' : 'Ingest into FAISS Index'}
-                </button>
+              <div className="flex items-center justify-between pt-3 border-t border-[#E3E0D8]/70 dark:border-[#423F3A]/70">
+                <span className="text-xs text-[#6B675F] dark:text-[#A39E93]">Press <kbd className="px-1 py-0.5 rounded bg-[#EDEAE1] dark:bg-[#383531] font-mono text-[10px]">Esc</kbd> to cancel</span>
+                <div className="flex items-center gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      stopRecordingAudio();
+                      setShowAudioModal(false);
+                    }}
+                    className="px-4 py-2 text-xs font-medium rounded-xl text-[#6B675F] hover:bg-[#EDEAE1] dark:hover:bg-[#383531] transition-colors cursor-pointer"
+                  >
+                    Cancel (Esc)
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={!audioFile || audioUploading}
+                    className="px-5 py-2 text-xs font-bold rounded-xl bg-[#DA7756] hover:bg-[#C4633F] text-white transition-colors cursor-pointer shadow-xs disabled:opacity-40 flex items-center gap-1.5"
+                  >
+                    {audioUploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+                    {audioUploading ? 'Transcribing & Indexing...' : 'Ingest into FAISS Index'}
+                  </button>
+                </div>
               </div>
             </form>
           </div>

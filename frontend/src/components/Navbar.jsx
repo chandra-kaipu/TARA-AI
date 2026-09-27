@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   Mic, 
   MicOff, 
@@ -13,7 +14,8 @@ import {
   Maximize2,
   Minimize2,
   Keyboard,
-  HelpCircle
+  HelpCircle,
+  X
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useVoice } from '../context/VoiceContext';
@@ -38,10 +40,24 @@ export default function Navbar({ activeTitle, subtitle }) {
   const [timerMode, setTimerMode] = useState('focus'); // 'focus' (25m), 'shortBreak' (5m), 'longBreak' (15m)
   const [showTimerMenu, setShowTimerMenu] = useState(false);
   const [sessionsCompleted, setSessionsCompleted] = useState(0);
+  const timerMenuRef = useRef(null);
 
   // PC Study Tools State
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
+
+  // Close timer dropdown on click outside
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (timerMenuRef.current && !timerMenuRef.current.contains(e.target)) {
+        setShowTimerMenu(false);
+      }
+    };
+    if (showTimerMenu) {
+      document.addEventListener('mousedown', handleOutsideClick);
+    }
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [showTimerMenu]);
 
   const playChime = () => {
     try {
@@ -108,6 +124,11 @@ export default function Navbar({ activeTitle, subtitle }) {
       if (e.key === '?' && !['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName)) {
         e.preventDefault();
         setShowShortcuts(prev => !prev);
+      }
+      // Escape: Close shortcuts or timer menu
+      if (e.key === 'Escape') {
+        setShowShortcuts(false);
+        setShowTimerMenu(false);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -199,7 +220,7 @@ export default function Navbar({ activeTitle, subtitle }) {
         </button>
 
         {/* Focus Study Timer Capsule */}
-        <div className="relative">
+        <div className="relative" ref={timerMenuRef}>
           <div className="flex items-center rounded-xl border border-[#E3E0D8] dark:border-[#423F3A] bg-[#F5F4EF] dark:bg-[#262523] p-1 shadow-2xs">
             <button
               onClick={() => setShowTimerMenu(!showTimerMenu)}
@@ -307,43 +328,81 @@ export default function Navbar({ activeTitle, subtitle }) {
         </button>
       </div>
 
-      {/* Keyboard Shortcuts Helper Modal */}
-      {showShortcuts && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
-          <div className="w-full max-w-md bg-[#FFFFFF] dark:bg-[#2E2C29] border border-[#E3E0D8] dark:border-[#423F3A] rounded-3xl p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-[#E3E0D8] dark:border-[#423F3A]">
-              <div className="flex items-center gap-2 font-bold text-base text-[#1F1E1D] dark:text-[#F5F4EF]">
-                <Keyboard className="w-5 h-5 text-[#DA7756]" />
-                Laptop Study Shortcuts
+      {/* Keyboard Shortcuts Helper Modal (Rendered in document.body via Portal to prevent header clipping) */}
+      {showShortcuts && createPortal(
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs transition-opacity"
+          onClick={() => setShowShortcuts(false)}
+        >
+          <div 
+            className="w-full max-w-lg bg-[#FFFFFF] dark:bg-[#2E2C29] border border-[#E3E0D8] dark:border-[#423F3A] rounded-3xl p-6 md:p-7 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-3.5 border-b border-[#E3E0D8] dark:border-[#423F3A]">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2.5 rounded-2xl bg-[#DA7756]/15 text-[#DA7756]">
+                  <Keyboard className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-serif-claude text-lg md:text-xl font-bold text-[#1F1E1D] dark:text-[#F5F4EF]">
+                    Laptop Study Shortcuts
+                  </h3>
+                  <p className="text-xs text-[#6B675F] dark:text-[#A39E93] font-sans font-normal">
+                    Quick keyboard navigation & hands-free study controls
+                  </p>
+                </div>
               </div>
               <button
+                type="button"
                 onClick={() => setShowShortcuts(false)}
-                className="text-xs px-2.5 py-1 rounded-lg border border-[#E3E0D8] dark:border-[#423F3A] text-[#6B675F] hover:text-[#1F1E1D] dark:hover:text-[#F5F4EF] cursor-pointer"
+                className="p-2 rounded-xl border border-[#E3E0D8] dark:border-[#423F3A] text-[#6B675F] hover:text-[#1F1E1D] dark:hover:text-[#F5F4EF] hover:bg-[#F5F4EF] dark:hover:bg-[#383531] transition-colors cursor-pointer"
+                title="Cancel / Close (Esc)"
               >
-                Close
+                <X className="w-5 h-5" />
               </button>
             </div>
 
+            {/* Shortcuts List */}
             <div className="space-y-2.5 text-xs md:text-sm">
-              <div className="flex items-center justify-between py-1 border-b border-[#E3E0D8]/60 dark:border-[#423F3A]/60">
-                <span className="text-[#6B675F] dark:text-[#A39E93]">Play / Pause Focus Timer</span>
-                <kbd className="px-2 py-1 rounded-md bg-[#EDEAE1] dark:bg-[#383531] font-mono font-bold text-xs">Ctrl + Space</kbd>
+              <div className="flex items-center justify-between py-2 px-3 rounded-xl bg-[#F5F4EF]/60 dark:bg-[#262523]/60 border border-[#E3E0D8]/60 dark:border-[#423F3A]/60">
+                <span className="text-[#1F1E1D] dark:text-[#F5F4EF] font-medium">Play / Pause Focus Timer</span>
+                <kbd className="px-2.5 py-1 rounded-lg bg-[#EDEAE1] dark:bg-[#383531] font-mono font-bold text-xs shadow-2xs border border-[#DDD9D0] dark:border-[#4F4B44]">Ctrl + Space</kbd>
               </div>
-              <div className="flex items-center justify-between py-1 border-b border-[#E3E0D8]/60 dark:border-[#423F3A]/60">
-                <span className="text-[#6B675F] dark:text-[#A39E93]">Fullscreen Focus Mode</span>
-                <kbd className="px-2 py-1 rounded-md bg-[#EDEAE1] dark:bg-[#383531] font-mono font-bold text-xs">Ctrl + Shift + F</kbd>
+              <div className="flex items-center justify-between py-2 px-3 rounded-xl bg-[#F5F4EF]/60 dark:bg-[#262523]/60 border border-[#E3E0D8]/60 dark:border-[#423F3A]/60">
+                <span className="text-[#1F1E1D] dark:text-[#F5F4EF] font-medium">Fullscreen Focus Mode</span>
+                <kbd className="px-2.5 py-1 rounded-lg bg-[#EDEAE1] dark:bg-[#383531] font-mono font-bold text-xs shadow-2xs border border-[#DDD9D0] dark:border-[#4F4B44]">Ctrl + Shift + F</kbd>
               </div>
-              <div className="flex items-center justify-between py-1 border-b border-[#E3E0D8]/60 dark:border-[#423F3A]/60">
-                <span className="text-[#6B675F] dark:text-[#A39E93]">Open Shortcuts Helper</span>
-                <kbd className="px-2 py-1 rounded-md bg-[#EDEAE1] dark:bg-[#383531] font-mono font-bold text-xs">?</kbd>
+              <div className="flex items-center justify-between py-2 px-3 rounded-xl bg-[#F5F4EF]/60 dark:bg-[#262523]/60 border border-[#E3E0D8]/60 dark:border-[#423F3A]/60">
+                <span className="text-[#1F1E1D] dark:text-[#F5F4EF] font-medium">Toggle Shortcuts Cheat Sheet</span>
+                <kbd className="px-2.5 py-1 rounded-lg bg-[#EDEAE1] dark:bg-[#383531] font-mono font-bold text-xs shadow-2xs border border-[#DDD9D0] dark:border-[#4F4B44]">?</kbd>
               </div>
-              <div className="flex items-center justify-between py-1">
-                <span className="text-[#6B675F] dark:text-[#A39E93]">Passive Wake Word</span>
-                <span className="font-semibold text-[#DA7756]">Say "TARA"</span>
+              <div className="flex items-center justify-between py-2 px-3 rounded-xl bg-[#F5F4EF]/60 dark:bg-[#262523]/60 border border-[#E3E0D8]/60 dark:border-[#423F3A]/60">
+                <span className="text-[#1F1E1D] dark:text-[#F5F4EF] font-medium">Passive Voice Activation</span>
+                <span className="font-semibold text-[#DA7756] font-mono">Say "TARA"</span>
+              </div>
+              <div className="flex items-center justify-between py-2 px-3 rounded-xl bg-[#F5F4EF]/60 dark:bg-[#262523]/60 border border-[#E3E0D8]/60 dark:border-[#423F3A]/60">
+                <span className="text-[#1F1E1D] dark:text-[#F5F4EF] font-medium">Close Any Open Modal / Drawer</span>
+                <kbd className="px-2.5 py-1 rounded-lg bg-[#EDEAE1] dark:bg-[#383531] font-mono font-bold text-xs shadow-2xs border border-[#DDD9D0] dark:border-[#4F4B44]">Esc</kbd>
               </div>
             </div>
+
+            {/* Modal Footer with Explicit Cancel / Close Button */}
+            <div className="flex items-center justify-between pt-3 border-t border-[#E3E0D8] dark:border-[#423F3A]">
+              <span className="text-xs text-[#6B675F] dark:text-[#A39E93]">
+                Press <kbd className="px-1.5 py-0.5 rounded bg-[#EDEAE1] dark:bg-[#383531] font-mono text-[10px]">Esc</kbd> or click outside to dismiss
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowShortcuts(false)}
+                className="px-5 py-2 text-xs font-bold rounded-xl bg-[#1F1E1D] dark:bg-[#F5F4EF] text-white dark:text-[#1F1E1D] hover:opacity-90 transition-opacity cursor-pointer shadow-xs"
+              >
+                Close (Esc)
+              </button>
+            </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </header>
   );

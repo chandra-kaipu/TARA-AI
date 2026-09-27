@@ -83,7 +83,7 @@ function MainApp() {
             <AgentChat />
           )}
           {activeTab === 'parental' && (
-            <ParentalPortal />
+            <ParentalPortal setActiveTab={setActiveTab} />
           )}
           {activeTab === 'evaluation' && (
             <PilotEvaluation 

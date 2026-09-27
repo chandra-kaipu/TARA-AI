@@ -155,6 +155,16 @@ export default function StudyChat({
     }
   }, [selectedCourseId]);
 
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && selectedNode) {
+        setSelectedNode(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedNode]);
+
   const handleSubmitQuery = async (queryText) => {
     const q = (queryText || inputQuery).trim();
     if (!q || !selectedCourseId || loading) return;
@@ -868,11 +878,21 @@ export default function StudyChat({
                     </p>
                   </div>
                 </div>
-                <div className="w-48 bg-[#EDEAE1] dark:bg-[#383531] h-3 rounded-full overflow-hidden">
-                  <div 
-                    className="bg-[#4F7A5C] h-full rounded-full transition-all duration-500"
-                    style={{ width: `${Math.min(100, readinessData.readiness_score)}%` }}
-                  />
+                <div className="flex items-center gap-3">
+                  <div className="w-40 md:w-48 bg-[#EDEAE1] dark:bg-[#383531] h-3 rounded-full overflow-hidden">
+                    <div 
+                      className="bg-[#4F7A5C] h-full rounded-full transition-all duration-500"
+                      style={{ width: `${Math.min(100, readinessData.readiness_score)}%` }}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setReadinessData(null)}
+                    className="p-1 rounded-lg text-[#6B675F] hover:text-[#1F1E1D] dark:hover:text-[#F5F4EF] hover:bg-[#F5F4EF] dark:hover:bg-[#383531] transition-colors cursor-pointer"
+                    title="Dismiss Diagnostic Panel"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
 
@@ -1328,9 +1348,19 @@ export default function StudyChat({
                       <span className="px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-[#DA7756]/15 text-[#DA7756]">
                         {selectedNode.category} Node
                       </span>
-                      <span className="text-xs text-[#6B675F] dark:text-[#A39E93] font-mono">
-                        Page {selectedNode.page_ref}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-[#6B675F] dark:text-[#A39E93] font-mono">
+                          Page {selectedNode.page_ref}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedNode(null)}
+                          className="p-1 rounded-lg text-[#6B675F] hover:text-[#1F1E1D] dark:hover:text-[#F5F4EF] hover:bg-[#EDEAE1] dark:hover:bg-[#383531] transition-colors cursor-pointer"
+                          title="Deselect / Close (Esc)"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
 
                     <div>

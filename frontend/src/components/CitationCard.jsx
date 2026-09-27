@@ -1,9 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FileText, ChevronRight, X, ExternalLink, Bookmark } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function CitationCard({ citation, index }) {
   const [isOpen, setIsOpen] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && isOpen) {
+        setIsOpen(false);
+      }
+    };
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen]);
 
   return (
     <>
@@ -20,12 +32,16 @@ export default function CitationCard({ citation, index }) {
       {/* Modal / Drawer for detailed inspection */}
       <AnimatePresence>
         {isOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/45 backdrop-blur-xs">
+          <div 
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs transition-opacity"
+            onClick={() => setIsOpen(false)}
+          >
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="w-full max-w-xl bg-[#FFFFFF] dark:bg-[#2E2C29] border border-[#E3E0D8] dark:border-[#423F3A] rounded-2xl shadow-2xl overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-xl bg-[#FFFFFF] dark:bg-[#2E2C29] border border-[#E3E0D8] dark:border-[#423F3A] rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150"
             >
               {/* Header */}
               <div className="flex items-center justify-between p-5 border-b border-[#E3E0D8] dark:border-[#423F3A] bg-[#F5F4EF] dark:bg-[#262523]">
@@ -44,7 +60,8 @@ export default function CitationCard({ citation, index }) {
                 </div>
                 <button
                   onClick={() => setIsOpen(false)}
-                  className="p-1.5 text-[#6B675F] hover:text-[#1F1E1D] dark:hover:text-[#F5F4EF] rounded-lg transition-colors cursor-pointer"
+                  className="p-1.5 text-[#6B675F] hover:text-[#1F1E1D] dark:hover:text-[#F5F4EF] hover:bg-[#EDEAE1] dark:hover:bg-[#383531] rounded-lg transition-colors cursor-pointer"
+                  title="Cancel / Close (Esc)"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -99,12 +116,16 @@ export default function CitationCard({ citation, index }) {
               </div>
 
               {/* Footer */}
-              <div className="p-4 border-t border-[#E3E0D8] dark:border-[#423F3A] flex justify-end bg-[#F5F4EF] dark:bg-[#262523]">
+              <div className="p-4 border-t border-[#E3E0D8] dark:border-[#423F3A] flex items-center justify-between bg-[#F5F4EF] dark:bg-[#262523]">
+                <span className="text-xs text-[#6B675F] dark:text-[#A39E93]">
+                  Press <kbd className="px-1.5 py-0.5 rounded bg-[#EDEAE1] dark:bg-[#383531] font-mono text-[10px]">Esc</kbd> to close
+                </span>
                 <button
+                  type="button"
                   onClick={() => setIsOpen(false)}
-                  className="px-5 py-2 text-sm font-medium bg-[#1F1E1D] dark:bg-[#F5F4EF] text-[#FFFFFF] dark:text-[#1F1E1D] rounded-xl hover:opacity-90 transition-opacity cursor-pointer"
+                  className="px-5 py-2 text-sm font-medium bg-[#1F1E1D] dark:bg-[#F5F4EF] text-[#FFFFFF] dark:text-[#1F1E1D] rounded-xl hover:opacity-90 transition-opacity cursor-pointer shadow-xs"
                 >
-                  Close
+                  Close (Esc)
                 </button>
               </div>
             </motion.div>

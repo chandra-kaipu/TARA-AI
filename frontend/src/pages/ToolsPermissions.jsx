@@ -12,7 +12,8 @@ import {
   Globe,
   Monitor,
   RefreshCw,
-  Loader2
+  Loader2,
+  X
 } from 'lucide-react';
 import { api } from '../services/api';
 
@@ -22,6 +23,16 @@ export default function ToolsPermissions() {
   const [loading, setLoading] = useState(true);
   const [testingTool, setTestingTool] = useState(null);
   const [testResult, setTestResult] = useState(null);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && testResult) {
+        setTestResult(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [testResult]);
 
   const loadData = async () => {
     try {
@@ -207,9 +218,11 @@ export default function ToolsPermissions() {
             </span>
             <button
               onClick={() => setTestResult(null)}
-              className="text-[#6B675F] hover:text-[#1F1E1D] text-xs font-semibold"
+              className="p-1 px-2.5 rounded-lg text-[#6B675F] hover:text-[#1F1E1D] dark:hover:text-[#F5F4EF] hover:bg-[#F5F4EF] dark:hover:bg-[#383531] transition-colors cursor-pointer flex items-center gap-1 text-xs font-semibold"
+              title="Dismiss (Esc)"
             >
-              Dismiss
+              <X className="w-3.5 h-3.5" />
+              Dismiss (Esc)
             </button>
           </div>
           <pre className="text-xs font-mono p-3.5 rounded-xl bg-[#262523] text-[#F5F4EF] overflow-x-auto max-h-52 whitespace-pre-wrap leading-relaxed">
