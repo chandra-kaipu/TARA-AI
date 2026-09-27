@@ -1,0 +1,211 @@
+[
+  {
+    "id": "74dc0e61-7edd-41fa-9f22-1ee1652891af",
+    "chunk_index": 0,
+    "page_number": 1,
+    "section_title": "Page 1",
+    "content": "# CS 101: Foundations of Artificial Intelligence & Retrieval Systems Course Instructor: Dr. Katherine Vance | Term: Fall 2026 | Department of Computer Science ## Course Overview & Prerequisites This course provides a rigorous, hands-on introduction to modern computational intelligence. Prerequisites include single-variable calculus, linear algebra, and basic proficiency in Python. Grading is weighted: 40% hands-on laboratory assignments, 25% midterm examination, 25% final project, and 10% classroom participation. ## Module 1: Vector Spaces and Dense Embeddings Traditional symbolic retrieval models such as BM25 and TF-IDF rely on lexical surface matching, making them vulnerable to vocabulary",
+    "char_count": 699,
+    "document_id": "c35a6547-f1a6-450e-b2ed-ff9d9f4e9cac",
+    "course_id": "sample-cs101",
+    "filename": "cs101_syllabus_and_guide.md"
+  },
+  {
+    "id": "b86ab1fd-1af4-481d-b387-24ecd2cb9f88",
+    "chunk_index": 1,
+    "page_number": 1,
+    "section_title": "Page 1",
+    "content": "Embeddings Traditional symbolic retrieval models such as BM25 and TF-IDF rely on lexical surface matching, making them vulnerable to vocabulary mismatch and synonymy. Modern vector retrieval addresses this limitation by mapping discrete textual units (words, sentences, or paragraphs) into continuous multi-dimensional geometric spaces (typically 384 to 1536 dimensions). In dense vector spaces, semantically similar concepts cluster together. Distance metrics such as Cosine Similarity (the cosine of the angle between two unit-normalized vectors) and Inner Product are computed to measure relevance. High-dimensional vector indexing is accelerated using approximate nearest neighbor (ANN) graph algorithms,",
+    "char_count": 708,
+    "document_id": "c35a6547-f1a6-450e-b2ed-ff9d9f4e9cac",
+    "course_id": "sample-cs101",
+    "filename": "cs101_syllabus_and_guide.md"
+  },
+  {
+    "id": "6d6e804b-7b93-49da-860e-e994cbf763ed",
+    "chunk_index": 2,
+    "page_number": 1,
+    "section_title": "Page 1",
+    "content": "and Inner Product are computed to measure relevance. High-dimensional vector indexing is accelerated using approximate nearest neighbor (ANN) graph algorithms, such as Hierarchical Navigable Small World (HNSW) and inverted file indexing (IVF-Flat) implemented in libraries like FAISS. ## Module 2: Retrieval-Augmented Generation (RAG) Architecture Retrieval-Augmented Generation (RAG) combin",
+    "char_count": 391,
+    "document_id": "c35a6547-f1a6-450e-b2ed-ff9d9f4e9cac",
+    "course_id": "sample-cs101",
+    "filename": "cs101_syllabus_and_guide.md"
+  },
+  {
+    "id": "f6e8e819-ad97-411a-a303-023b8715b19f",
+    "chunk_index": 3,
+    "page_number": 2,
+    "section_title": "Page 2",
+    "content": "es dense semantic retrieval with parametric language models. Rather than relying solely on the static, potentially outdated parameters of a foundation model, a RAG pipeline dynamically fetches relevant context chunks from an external knowledge base and injects them into the prompt. A standard RAG pipeline operates in three discrete stages: 1. Ingestion and Indexing: Source documents are parsed, stripped of formatting noise, and segmented into overlapping text chunks (typically 500 to 1000 characters with 10% to 20% overlap). Overlap preserves syntactic context across segment boundaries. 2. Retrieval: When a user query arrives, it is embedded using the same vector model, and the top-k most similar",
+    "char_count": 705,
+    "document_id": "c35a6547-f1a6-450e-b2ed-ff9d9f4e9cac",
+    "course_id": "sample-cs101",
+    "filename": "cs101_syllabus_and_guide.md"
+  },
+  {
+    "id": "5d2fe991-9cc0-48ca-9ce4-38fe1fb1785e",
+    "chunk_index": 4,
+    "page_number": 2,
+    "section_title": "Page 2",
+    "content": "2. Retrieval: When a user query arrives, it is embedded using the same vector model, and the top-k most similar chunks are retrieved via vector search. 3. Grounded Synthesis: The retrieved chunks are assembled into a context prompt with explicit instructions requiring the model to cite sources and reject hallucination when information is absent. ## Module 3: Autonomous AI Agents and Tool Orchestration An AI agent differs from a passive conversational model in its ability to perceive external environments and execute actions. Agents operate via a continuous perception-cognition-action loop: 1. Perception: Ingesting multimodal inputs including text, audio, and visual displays. 2. Cognition & Planning:",
+    "char_count": 708,
+    "document_id": "c35a6547-f1a6-450e-b2ed-ff9d9f4e9cac",
+    "course_id": "sample-cs101",
+    "filename": "cs101_syllabus_and_guide.md"
+  },
+  {
+    "id": "c77e6386-db15-4341-bc84-ce8bbfe1bc8e",
+    "chunk_index": 5,
+    "page_number": 2,
+    "section_title": "Page 2",
+    "content": "via a continuous perception-cognition-action loop: 1. Perception: Ingesting multimodal inputs including text, audio, and visual displays. 2. Cognition & Planning: Decomposing high-level goals into sequential sub-tasks. 3. Tool Execution: Generating structured function calls (e.g., JSON schemas) to trigger external APIs, database transactions, web search, or",
+    "char_count": 359,
+    "document_id": "c35a6547-f1a6-450e-b2ed-ff9d9f4e9cac",
+    "course_id": "sample-cs101",
+    "filename": "cs101_syllabus_and_guide.md"
+  },
+  {
+    "id": "0544d694-4112-4b7d-bf51-0dd0c9f34a2d",
+    "chunk_index": 6,
+    "page_number": 3,
+    "section_title": "Page 3",
+    "content": "OS-level commands. Crucially, production agent architectures enforce a Human-in-the-Loop (HITL) permission gate before executing privileged operations, such as modifying file systems, launching applications, or initiating web browsing sessions. ## Examination Policies and Office Hours The midterm examination will take place during Week 7, covering Modules 1 through 3. All students are permitted one double-sided A4 handwritten reference sheet. Office hours are held Tuesdays and Thursdays from 2:00 PM to 4:00 PM in Alan Turing Hall, Room 304, or via the interactive study portal.",
+    "char_count": 583,
+    "document_id": "c35a6547-f1a6-450e-b2ed-ff9d9f4e9cac",
+    "course_id": "sample-cs101",
+    "filename": "cs101_syllabus_and_guide.md"
+  },
+  {
+    "id": "ce335ac5-defb-4ff0-a874-23437a8f9308",
+    "chunk_index": 0,
+    "page_number": 1,
+    "section_title": "Page 1",
+    "content": "CS 101 Advanced Lecture Notes: Deep Neural Architecture Section 1: Transformer Attention Mechanism The core mechanism behind modern large language models is multi-head self-attention. Attention computes queries (Q), keys (K), and values (V) using linear projections. The scaled dot-product attention formula is Attention(Q, K, V) = softmax(Q * K^T / sqrt(d_k)) * V. This allows models to capture long-range token dependencies in parallel across sequences.",
+    "char_count": 455,
+    "document_id": "a1f377e0-efa4-4280-a783-9f337b24d229",
+    "course_id": "sample-cs101",
+    "filename": "test_lecture_notes.pdf"
+  },
+  {
+    "id": "2ef3f0a5-9457-4b7b-a84e-1b095c1f7c78",
+    "chunk_index": 1,
+    "page_number": 2,
+    "section_title": "Page 2",
+    "content": "Section 2: Quantization and Edge Inference Model quantization reduces numerical precision of weights from FP32 or FP16 down to INT8 or INT4. Techniques such as AWQ (Activation-aware Weight Quantization) and GPTQ minimize perplexity degradation while shrinking memory footprint by 75%, allowing local execution on commodity hardware. The course practical lab requires implementing INT8 dynamic quantization in PyTorch.",
+    "char_count": 417,
+    "document_id": "a1f377e0-efa4-4280-a783-9f337b24d229",
+    "course_id": "sample-cs101",
+    "filename": "test_lecture_notes.pdf"
+  },
+  {
+    "id": "3a7771a2-21f0-41d2-8426-30fb38c577c6",
+    "chunk_index": 0,
+    "page_number": 1,
+    "section_title": "Page 1",
+    "content": "CS 101 Advanced Lecture Notes: Deep Neural Architecture Section 1: Transformer Attention Mechanism The core mechanism behind modern large language models is multi-head self-attention. Attention computes queries (Q), keys (K), and values (V) using linear projections. The scaled dot-product attention formula is Attention(Q, K, V) = softmax(Q * K^T / sqrt(d_k)) * V. This allows models to capture long-range token dependencies in parallel across sequences.",
+    "char_count": 455,
+    "document_id": "eaa0505f-4c5e-43a4-bc9a-0a22e6b41f0a",
+    "course_id": "sample-cs101",
+    "filename": "test_lecture_notes.pdf"
+  },
+  {
+    "id": "d590dbb4-3bd5-4772-8c42-8229440fbea1",
+    "chunk_index": 1,
+    "page_number": 2,
+    "section_title": "Page 2",
+    "content": "Section 2: Quantization and Edge Inference Model quantization reduces numerical precision of weights from FP32 or FP16 down to INT8 or INT4. Techniques such as AWQ (Activation-aware Weight Quantization) and GPTQ minimize perplexity degradation while shrinking memory footprint by 75%, allowing local execution on commodity hardware. The course practical lab requires implementing INT8 dynamic quantization in PyTorch.",
+    "char_count": 417,
+    "document_id": "eaa0505f-4c5e-43a4-bc9a-0a22e6b41f0a",
+    "course_id": "sample-cs101",
+    "filename": "test_lecture_notes.pdf"
+  },
+  {
+    "id": "32de8b86-6b2c-4a3b-aca3-60437cc08818",
+    "chunk_index": 0,
+    "page_number": 1,
+    "section_title": "Page 1",
+    "content": "CS 101 Advanced Lecture Notes: Deep Neural Architecture Section 1: Transformer Attention Mechanism The core mechanism behind modern large language models is multi-head self-attention. Attention computes queries (Q), keys (K), and values (V) using linear projections. The scaled dot-product attention formula is Attention(Q, K, V) = softmax(Q * K^T / sqrt(d_k)) * V. This allows models to capture long-range token dependencies in parallel across sequences.",
+    "char_count": 455,
+    "document_id": "ea5277aa-790d-44bf-a483-8634b721d070",
+    "course_id": "sample-cs101",
+    "filename": "test_lecture_notes.pdf"
+  },
+  {
+    "id": "64216164-f920-446f-848c-e96847c04796",
+    "chunk_index": 1,
+    "page_number": 2,
+    "section_title": "Page 2",
+    "content": "Section 2: Quantization and Edge Inference Model quantization reduces numerical precision of weights from FP32 or FP16 down to INT8 or INT4. Techniques such as AWQ (Activation-aware Weight Quantization) and GPTQ minimize perplexity degradation while shrinking memory footprint by 75%, allowing local execution on commodity hardware. The course practical lab requires implementing INT8 dynamic quantization in PyTorch.",
+    "char_count": 417,
+    "document_id": "ea5277aa-790d-44bf-a483-8634b721d070",
+    "course_id": "sample-cs101",
+    "filename": "test_lecture_notes.pdf"
+  },
+  {
+    "id": "458ba32a-3360-416a-b378-52ad88c166bd",
+    "chunk_index": 0,
+    "page_number": 1,
+    "section_title": "Page 1",
+    "content": "CS 101 Advanced Lecture Notes: Deep Neural Architecture Section 1: Transformer Attention Mechanism The core mechanism behind modern large language models is multi-head self-attention. Attention computes queries (Q), keys (K), and values (V) using linear projections. The scaled dot-product attention formula is Attention(Q, K, V) = softmax(Q * K^T / sqrt(d_k)) * V. This allows models to capture long-range token dependencies in parallel across sequences.",
+    "char_count": 455,
+    "document_id": "d904fedb-3095-4ab4-986e-b0323e205b80",
+    "course_id": "sample-cs101",
+    "filename": "test_lecture_notes.pdf"
+  },
+  {
+    "id": "a55c9392-865b-4de3-be9e-0ec40f29567f",
+    "chunk_index": 1,
+    "page_number": 2,
+    "section_title": "Page 2",
+    "content": "Section 2: Quantization and Edge Inference Model quantization reduces numerical precision of weights from FP32 or FP16 down to INT8 or INT4. Techniques such as AWQ (Activation-aware Weight Quantization) and GPTQ minimize perplexity degradation while shrinking memory footprint by 75%, allowing local execution on commodity hardware. The course practical lab requires implementing INT8 dynamic quantization in PyTorch.",
+    "char_count": 417,
+    "document_id": "d904fedb-3095-4ab4-986e-b0323e205b80",
+    "course_id": "sample-cs101",
+    "filename": "test_lecture_notes.pdf"
+  },
+  {
+    "id": "c6f7df50-e08d-464b-95ff-343000fbdf0e",
+    "chunk_index": 0,
+    "page_number": 1,
+    "section_title": "Page 1",
+    "content": "CS 101 Advanced Lecture Notes: Deep Neural Architecture Section 1: Transformer Attention Mechanism The core mechanism behind modern large language models is multi-head self-attention. Attention computes queries (Q), keys (K), and values (V) using linear projections. The scaled dot-product attention formula is Attention(Q, K, V) = softmax(Q * K^T / sqrt(d_k)) * V. This allows models to capture long-range token dependencies in parallel across sequences.",
+    "char_count": 455,
+    "document_id": "83d5bfeb-e696-4640-b703-888f5e45cd5f",
+    "course_id": "sample-cs101",
+    "filename": "test_lecture_notes.pdf"
+  },
+  {
+    "id": "a723bf56-5055-4248-9e8e-33e6c3b23575",
+    "chunk_index": 1,
+    "page_number": 2,
+    "section_title": "Page 2",
+    "content": "Section 2: Quantization and Edge Inference Model quantization reduces numerical precision of weights from FP32 or FP16 down to INT8 or INT4. Techniques such as AWQ (Activation-aware Weight Quantization) and GPTQ minimize perplexity degradation while shrinking memory footprint by 75%, allowing local execution on commodity hardware. The course practical lab requires implementing INT8 dynamic quantization in PyTorch.",
+    "char_count": 417,
+    "document_id": "83d5bfeb-e696-4640-b703-888f5e45cd5f",
+    "course_id": "sample-cs101",
+    "filename": "test_lecture_notes.pdf"
+  },
+  {
+    "id": "e6fcc177-d620-42ff-8423-6c4b140e3d0b",
+    "chunk_index": 0,
+    "page_number": 1,
+    "section_title": "Page 1",
+    "content": "CS 101 Advanced Lecture Notes: Deep Neural Architecture Section 1: Transformer Attention Mechanism The core mechanism behind modern large language models is multi-head self-attention. Attention computes queries (Q), keys (K), and values (V) using linear projections. The scaled dot-product attention formula is Attention(Q, K, V) = softmax(Q * K^T / sqrt(d_k)) * V. This allows models to capture long-range token dependencies in parallel across sequences.",
+    "char_count": 455,
+    "document_id": "5d33c406-e780-468c-bb20-7c49b79a77b6",
+    "course_id": "sample-cs101",
+    "filename": "test_lecture_notes.pdf"
+  },
+  {
+    "id": "e73c5274-bb8e-4344-a11d-55892e243982",
+    "chunk_index": 1,
+    "page_number": 2,
+    "section_title": "Page 2",
+    "content": "Section 2: Quantization and Edge Inference Model quantization reduces numerical precision of weights from FP32 or FP16 down to INT8 or INT4. Techniques such as AWQ (Activation-aware Weight Quantization) and GPTQ minimize perplexity degradation while shrinking memory footprint by 75%, allowing local execution on commodity hardware. The course practical lab requires implementing INT8 dynamic quantization in PyTorch.",
+    "char_count": 417,
+    "document_id": "5d33c406-e780-468c-bb20-7c49b79a77b6",
+    "course_id": "sample-cs101",
+    "filename": "test_lecture_notes.pdf"
+  }
+]

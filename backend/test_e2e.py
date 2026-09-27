@@ -1,0 +1,241 @@
+import sys
+import io
+import requests
+import json
+import fitz  # PyMuPDF
+
+# Ensure UTF-8 console output on Windows
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+
+BASE_URL = 'http://127.0.0.1:8000'
+
+def run_tests():
+    print("=" * 60)
+    print("TARA AI AGENT — END-TO-END TEST SUITE")
+    print("=" * 60)
+
+    # 1. Health Check
+    res = requests.get(f"{BASE_URL}/api/health")
+    assert res.status_code == 200
+    print("[PASS] 1. Backend Health Check OK:", res.json()["status"])
+
+    # 2. Dashboard Stats
+    res = requests.get(f"{BASE_URL}/api/dashboard/stats")
+    assert res.status_code == 200
+    stats = res.json()["stats"]
+    print(f"[PASS] 2. Dashboard Stats: {stats['courses']} Courses, {stats['documents']} Docs, {stats['chunks']} Chunks")
+
+    # 3. List Courses
+    res = requests.get(f"{BASE_URL}/api/courses")
+    assert res.status_code == 200
+    courses = res.json()
+    assert len(courses) > 0
+    course_id = courses[0]["id"]
+    course_name = courses[0]["name"]
+    print(f"[PASS] 3. Course Verified: '{course_name}' (ID: {course_id})")
+
+    # 4. Create and Ingest a Real Multi-Page PDF
+    print("\n--- Generating and Ingesting Real PDF Document ---")
+    doc = fitz.open()
+    # Page 1
+    page1 = doc.new_page()
+    page1.insert_text((50, 72), "CS 101 Advanced Lecture Notes: Deep Neural Architecture", fontsize=16)
+    page1.insert_text((50, 110), "Section 1: Transformer Attention Mechanism\n"
+                                "The core mechanism behind modern large language models is multi-head self-attention.\n"
+                                "Attention computes queries (Q), keys (K), and values (V) using linear projections.\n"
+                                "The scaled dot-product attention formula is Attention(Q, K, V) = softmax(Q * K^T / sqrt(d_k)) * V.\n"
+                                "This allows models to capture long-range token dependencies in parallel across sequences.", fontsize=11)
+    # Page 2
+    page2 = doc.new_page()
+    page2.insert_text((50, 72), "Section 2: Quantization and Edge Inference", fontsize=16)
+    page2.insert_text((50, 110), "Model quantization reduces numerical precision of weights from FP32 or FP16 down to INT8 or INT4.\n"
+                                "Techniques such as AWQ (Activation-aware Weight Quantization) and GPTQ minimize perplexity degradation\n"
+                                "while shrinking memory footprint by 75%, allowing local execution on commodity hardware.\n"
+                                "The course practical lab requires implementing INT8 dynamic quantization in PyTorch.", fontsize=11)
+    
+    test_pdf_path = "test_lecture_notes.pdf"
+    doc.save(test_pdf_path)
+    doc.close()
+    print(f"Generated real 2-page PDF: {test_pdf_path}")
+
+    # Upload to Course
+    with open(test_pdf_path, "rb") as f:
+        upload_res = requests.post(
+            f"{BASE_URL}/api/courses/{course_id}/documents",
+            files={"file": (test_pdf_path, f, "application/pdf")}
+        )
+    assert upload_res.status_code == 200
+    upload_data = upload_res.json()
+    print(f"[PASS] 4. Real PDF Uploaded & Ingested: {upload_data['document']['page_count']} pages, {upload_data['document']['chunk_count']} vector chunks indexed!")
+
+    # 5. Course-Grounded Study Question (Must be answered and cited)
+    print("\n--- Testing Grounded Study Q&A with Citations ---")
+    query_payload = {
+        "course_id": course_id,
+        "query": "What is the formula for scaled dot-product attention in Transformer models?"
+    }
+    study_res = requests.post(f"{BASE_URL}/api/study/query", json=query_payload)
+    assert study_res.status_code == 200
+    study_data = study_res.json()
+    print(f"[PASS] 5. Grounded Answer Received:")
+    print("Answer snippet:", study_data["answer"][:180] + "...")
+    print(f"Citations count: {len(study_data['citations'])}")
+    for c in study_data['citations']:
+        print(f"   -> Citation: File '{c['filename']}', Page {c['page']}, Section '{c['section']}'")
+    assert len(study_data['citations']) > 0
+
+    # 6. Strict Grounding Rejection Test (Negative test: off-topic question must NOT be answered)
+    print("\n--- Testing Strict Grounding Rejection Filter ---")
+    negative_payload = {
+        "course_id": course_id,
+        "query": "What is the capital city of Australia and what is its population?"
+    }
+    neg_res = requests.post(f"{BASE_URL}/api/study/query", json=negative_payload)
+    assert neg_res.status_code == 200
+    neg_data = neg_res.json()
+    print("[PASS] 6. Strict Grounding Rejection Response:")
+    print("Response text:", neg_data["answer"])
+    # Must explicitly state it cannot find the answer in the uploaded materials
+    assert "cannot find" in neg_data["answer"].lower() or "materials" in neg_data["answer"].lower()
+
+    # 7. Thumbs Up Feedback Submission
+    print("\n--- Testing Feedback Submission ---")
+    feedback_payload = {
+        "message_id": study_data["id"],
+        "feedback": "up"
+    }
+    fb_res = requests.post(f"{BASE_URL}/api/study/feedback", json=feedback_payload)
+    assert fb_res.status_code == 200
+    print("[PASS] 7. Feedback recorded in SQLite:", fb_res.json())
+
+    # 8. General Agent Tool Proposal & Permission Gate
+    print("\n--- Testing General Agent Tool Proposal & HITL Permission Gate ---")
+    agent_payload = {
+        "session_id": "test-session",
+        "message": "Please take a screenshot of my screen"
+    }
+    agent_res = requests.post(f"{BASE_URL}/api/agent/query", json=agent_payload)
+    assert agent_res.status_code == 200
+    agent_data = agent_res.json()
+    print("[PASS] 8. Agent Proposed Tool:")
+    proposal = agent_data.get("tool_proposal")
+    assert proposal is not None
+    print(f"   Tool: {proposal['tool_name']}")
+    print(f"   Requires Confirmation: {proposal['requires_confirmation']}")
+    print(f"   Reason: {proposal['reason']}")
+
+    # 9. Confirm and Execute the Tool (Human-In-The-Loop Approval)
+    print("\n--- Testing Tool Execution Upon Approval ---")
+    confirm_payload = {
+        "session_id": "test-session",
+        "tool_name": proposal["tool_name"],
+        "arguments": proposal["arguments"],
+        "approved": True
+    }
+    confirm_res = requests.post(f"{BASE_URL}/api/agent/confirm_tool", json=confirm_payload)
+    assert confirm_res.status_code == 200
+    confirm_data = confirm_res.json()
+    print("[PASS] 9. Tool Executed Successfully:")
+    print("   Status:", confirm_data["status"])
+    print("   Result:", confirm_data["result"].get("result"))
+    if "filename" in confirm_data["result"]:
+        print("   Saved Screenshot File:", confirm_data["result"]["filename"])
+
+    # 10. Test gTTS Voice Synthesis (Server-Side TTS for KPRIT Project)
+    print("\n--- Testing Server-Side Voice Synthesis (gTTS) ---")
+    tts_res = requests.post(f"{BASE_URL}/api/voice/synthesize", json={"text": "The scaled dot-product attention computes queries, keys, and values."})
+    assert tts_res.status_code == 200
+    assert tts_res.headers.get("content-type") == "audio/mpeg"
+    assert len(tts_res.content) > 1000
+    print(f"[PASS] 10. Voice Audio Synthesized: {len(tts_res.content)} bytes of MP3 audio returned.")
+
+    # 11. Test Pilot Evaluation Analytics & Student Feedback
+    print("\n--- Testing Pilot Evaluation Analytics (KPRIT Rubric) ---")
+    analytics_res = requests.get(f"{BASE_URL}/api/analytics/course/{course_id}")
+    assert analytics_res.status_code == 200
+    analytics_data = analytics_res.json()
+    assert "metrics" in analytics_data
+    print(f"[PASS] 11. Pilot Metrics Verified:")
+    print(f"   Institution: {analytics_data['institution']}")
+    print(f"   Total Queries: {analytics_data['metrics']['total_student_queries']}")
+    print(f"   Grounded Rate: {analytics_data['metrics']['grounding_accuracy_rate']}")
+    print(f"   Student Usefulness Score: {analytics_data['metrics']['student_usefulness_score']}")
+
+    # 12. Test Pilot CSV Export
+    print("\n--- Testing Evaluation CSV Report Export ---")
+    csv_res = requests.get(f"{BASE_URL}/api/analytics/course/{course_id}/export_csv")
+    assert csv_res.status_code == 200
+    assert "Message ID,Course,Role,Content,Citations Count" in csv_res.text
+    print(f"[PASS] 12. Pilot CSV Report Generated ({len(csv_res.text)} characters).")
+
+    # 13. Verify Audit Log
+    print("\n--- Testing Tool Execution Audit Log ---")
+    logs_res = requests.get(f"{BASE_URL}/api/tools/logs")
+    assert logs_res.status_code == 200
+    logs = logs_res.json()
+    assert len(logs) > 0
+    print(f"[PASS] 13. Audit Log Verified: {len(logs)} log entries recorded.")
+    print(f"   Latest Log: {logs[0]['tool_name']} -> {logs[0]['status']}")
+
+    # 14. Test Course-Grounded Practice Quiz Generation
+    print("\n--- Testing Practice Quiz Generation ---")
+    quiz_res = requests.post(f"{BASE_URL}/api/study/quiz", json={"course_id": course_id, "count": 3})
+    assert quiz_res.status_code == 200
+    quiz_data = quiz_res.json()
+    assert len(quiz_data["questions"]) > 0
+    print(f"[PASS] 14. Practice Quiz Generated: {len(quiz_data['questions'])} multiple-choice questions.")
+    print(f"   Sample Question: {quiz_data['questions'][0]['question']}")
+    print(f"   Options Count: {len(quiz_data['questions'][0]['options'])}")
+    assert len(quiz_data['questions'][0]['options']) == 4
+
+    # 15. Test Course Flashcards Generation
+    print("\n--- Testing Flashcards Generation ---")
+    cards_res = requests.post(f"{BASE_URL}/api/study/flashcards?course_id={course_id}&count=3")
+    assert cards_res.status_code == 200
+    cards_data = cards_res.json()
+    assert len(cards_data["flashcards"]) > 0
+    print(f"[PASS] 15. Flashcards Generated: {len(cards_data['flashcards'])} concept cards.")
+    print(f"   Front: {cards_data['flashcards'][0]['front']}")
+    print(f"   Back: {cards_data['flashcards'][0]['back'][:100]}...")
+
+    # 16. Test Exam Revision Guide / Summary
+    print("\n--- Testing Exam Revision Guide Generation ---")
+    sum_res = requests.post(f"{BASE_URL}/api/study/summary", json={"course_id": course_id})
+    assert sum_res.status_code == 200
+    sum_data = sum_res.json()
+    assert len(sum_data["summary_markdown"]) > 100
+    print(f"[PASS] 16. Exam Revision Guide Generated ({len(sum_data['summary_markdown'])} chars, {len(sum_data['key_concepts'])} key concepts).")
+
+    # 17. Test Document Vector Chunks Inspector
+    print("\n--- Testing Document Vector Chunks Inspector ---")
+    docs_res = requests.get(f"{BASE_URL}/api/courses/{course_id}/documents")
+    assert docs_res.status_code == 200
+    docs = docs_res.json()
+    test_doc_id = docs[0]["id"]
+    chunks_res = requests.get(f"{BASE_URL}/api/courses/{course_id}/documents/{test_doc_id}/chunks")
+    assert chunks_res.status_code == 200
+    chunks_data = chunks_res.json()
+    assert len(chunks_data) > 0
+    print(f"[PASS] 17. Chunks Inspector Verified: {len(chunks_data)} chunks in document, first chunk is on page {chunks_data[0]['page_number']}.")
+
+    # 18. Test Frontend HTML availability
+    print("\n--- Testing Frontend Serving ---")
+    frontend_url = None
+    for port in [5174, 5173]:
+        try:
+            front_res = requests.get(f"http://127.0.0.1:{port}", timeout=2)
+            if front_res.status_code == 200 and "TARA" in front_res.text:
+                frontend_url = f"http://127.0.0.1:{port}"
+                break
+        except Exception:
+            pass
+
+    assert frontend_url is not None, "Neither port 5174 nor 5173 responded with TARA web app!"
+    print(f"[PASS] 18. Frontend is actively serving on {frontend_url} with title 'TARA'")
+
+    print("\n" + "=" * 60)
+    print("ALL 18 END-TO-END VERIFICATION TESTS PASSED SUCCESSFULLY!")
+    print("=" * 60)
+
+if __name__ == "__main__":
+    run_tests()

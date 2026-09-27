@@ -1,0 +1,153 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --bg-main: #F5F4EF;
+    --surface-main: #FFFFFF;
+    --surface-alt: #EDEAE1;
+    --text-primary: #181716;
+    --text-secondary: #4A463F;
+    --accent: #DA7756;
+    --accent-hover: #C4633F;
+    --accent-subtle: rgba(218, 119, 86, 0.14);
+    --border-color: #DDD9D0;
+    --border-subtle: #E8E5DD;
+    --color-success: #3D6B4A;
+    --color-warning: #A6752A;
+    --color-error: #C24343;
+    --shadow-subtle: 0 1px 3px rgba(24, 23, 22, 0.06), 0 1px 2px rgba(24, 23, 22, 0.04);
+    --shadow-elevated: 0 6px 20px rgba(24, 23, 22, 0.08), 0 2px 6px rgba(24, 23, 22, 0.05);
+  }
+
+  .dark {
+    --bg-main: #242321;
+    --surface-main: #2C2A27;
+    --surface-alt: #363430;
+    --text-primary: #F8F6F2;
+    --text-secondary: #C8C3B8;
+    --accent: #DA7756;
+    --accent-hover: #C4633F;
+    --accent-subtle: rgba(218, 119, 86, 0.22);
+    --border-color: #48453F;
+    --border-subtle: #3D3A35;
+    --color-success: #67A87A;
+    --color-warning: #E0A64C;
+    --color-error: #E57373;
+    --shadow-subtle: 0 2px 5px rgba(0, 0, 0, 0.25);
+    --shadow-elevated: 0 8px 24px rgba(0, 0, 0, 0.45);
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     GENEROUS, NORMAL SIZED TYPOGRAPHY SCALE (No tiny fine-print!)
+     ═══════════════════════════════════════════════════════════════════════════ */
+  html {
+    font-size: 17.5px; /* Base rem scaling */
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--bg-main);
+    color: var(--text-primary);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 1rem;       /* 17.5px body font */
+    line-height: 1.65;
+    letter-spacing: -0.011em;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    margin: 0;
+    padding: 0;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4, .font-serif-claude {
+    font-family: 'Lora', 'Newsreader', "Georgia", "Cambria", serif;
+    letter-spacing: -0.02em;
+    font-weight: 700;
+  }
+
+  /* Form Elements */
+  input, textarea, select, button {
+    font-family: inherit;
+    font-size: 0.95rem; /* ~16.6px */
+    letter-spacing: inherit;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   UTILITY SCALE OVERRIDES: Standard readable sizes across all components
+   ═══════════════════════════════════════════════════════════════════════════ */
+.text-xs {
+  font-size: 0.85rem !important; /* ~15px */
+  line-height: 1.5 !important;
+}
+
+.text-sm {
+  font-size: 0.95rem !important; /* ~16.6px */
+  line-height: 1.6 !important;
+}
+
+.text-base {
+  font-size: 1.05rem !important; /* ~18.5px */
+  line-height: 1.65 !important;
+}
+
+.text-lg {
+  font-size: 1.25rem !important; /* ~22px */
+  line-height: 1.45 !important;
+}
+
+.text-xl {
+  font-size: 1.5rem !important;  /* ~26px */
+  line-height: 1.35 !important;
+}
+
+.text-2xl {
+  font-size: 1.85rem !important; /* ~32.5px */
+  line-height: 1.3 !important;
+}
+
+.text-3xl {
+  font-size: 2.35rem !important; /* ~41px */
+  line-height: 1.25 !important;
+}
+
+.text-4xl {
+  font-size: 2.85rem !important; /* ~50px */
+  line-height: 1.2 !important;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+
+/* Voice pulse keyframes */
+@keyframes voice-ripple {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(218, 119, 86, 0.55);
+  }
+  70% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 18px rgba(218, 119, 86, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(218, 119, 86, 0);
+  }
+}
+
+.animate-voice-pulse {
+  animation: voice-ripple 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+}
