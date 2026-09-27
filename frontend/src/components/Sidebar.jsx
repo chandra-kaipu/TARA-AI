@@ -11,8 +11,9 @@ import {
   Sun,
   Moon,
   Volume2,
-  Sparkles,
-  Award
+  Award,
+  Lock,
+  Monitor
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useVoice } from '../context/VoiceContext';
@@ -26,7 +27,9 @@ export default function Sidebar({ activeTab, setActiveTab }) {
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, badge: null },
     { id: 'courses', label: 'Courses & Docs', icon: GraduationCap, badge: null },
     { id: 'study', label: 'Study Chat', icon: MessageSquare, badge: 'Grounded' },
+    { id: 'notes', label: 'Laptop Notes', icon: Monitor, badge: 'PC Tool' },
     { id: 'agent', label: 'General Agent', icon: Bot, badge: 'Tools' },
+    { id: 'parental', label: 'Parental Portal', icon: Lock, badge: 'Guardian' },
     { id: 'evaluation', label: 'Pilot Evaluation', icon: Award, badge: 'KPRIT' },
     { id: 'tools', label: 'Tools & Permissions', icon: ShieldCheck, badge: null },
     { id: 'settings', label: 'Settings & Models', icon: SettingsIcon, badge: null }

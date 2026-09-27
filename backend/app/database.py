@@ -120,6 +120,77 @@ def init_db():
         )
         """)
 
+        # 9. Study Sessions (Time Tracking for Students and Parents)
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS study_sessions (
+            id TEXT PRIMARY KEY,
+            course_id TEXT,
+            session_type TEXT NOT NULL,
+            duration_minutes INTEGER NOT NULL,
+            notes TEXT,
+            timestamp TEXT NOT NULL
+        )
+        """)
+
+        # 10. Student Laptop Scratchpad & Notes
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS student_notes (
+            id TEXT PRIMARY KEY,
+            course_id TEXT,
+            title TEXT NOT NULL,
+            content TEXT NOT NULL,
+            tags TEXT DEFAULT '[]',
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        )
+        """)
+
+        # 11. Web Activity Logs (Parental Oversight & Safety Monitoring)
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS web_activity_logs (
+            id TEXT PRIMARY KEY,
+            activity_type TEXT NOT NULL,
+            query_or_url TEXT NOT NULL,
+            summary TEXT,
+            safety_flag TEXT DEFAULT 'safe',
+            timestamp TEXT NOT NULL
+        )
+        """)
+
+        # 12. Parental Settings (PIN Protection & Daily Time Limits)
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS parental_settings (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL
+        )
+        """)
+
+        # Seed default parental PIN if empty
+        cursor.execute("SELECT COUNT(*) FROM parental_settings WHERE key = 'parent_pin'")
+        if cursor.fetchone()[0] == 0:
+            cursor.execute("INSERT INTO parental_settings (key, value) VALUES ('parent_pin', '1234')")
+            cursor.execute("INSERT INTO parental_settings (key, value) VALUES ('daily_limit_minutes', '240')")
+
+        # Seed initial study session sample if empty
+        cursor.execute("SELECT COUNT(*) FROM study_sessions")
+        if cursor.fetchone()[0] == 0:
+            now_iso = datetime.now().isoformat()
+            cursor.execute("""
+            INSERT INTO study_sessions (id, course_id, session_type, duration_minutes, notes, timestamp)
+            VALUES (?, 'sample-cs101', 'focus_timer', 25, 'Transformer Architecture & Attention Focus Session', ?)
+            """, (str(uuid.uuid4()), now_iso))
+
+        # Seed initial starter note
+        cursor.execute("SELECT COUNT(*) FROM student_notes")
+        if cursor.fetchone()[0] == 0:
+            now_iso = datetime.now().isoformat()
+            cursor.execute("""
+            INSERT INTO student_notes (id, course_id, title, content, tags, created_at, updated_at)
+            VALUES (?, 'sample-cs101', 'Lecture 1: Transformers & Quantization Notes', 
+            '# Core Takeaways\n- Scaled dot-product attention computes queries, keys, and values.\n- Formula: Attention(Q, K, V) = softmax(Q * K^T / sqrt(d_k)) * V.\n- Quantization reduces FP32 to INT8/INT4 saving 75% memory on PC.',
+            '[\"exam-prep\", \"ai\"]', ?, ?)
+            """, (str(uuid.uuid4()), now_iso, now_iso))
+
         # Seed default tools if empty
         cursor.execute("SELECT COUNT(*) FROM tool_permissions")
         if cursor.fetchone()[0] == 0:

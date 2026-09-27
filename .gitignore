@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+*$py.class
+*.env
+node_modules/
+dist/
+backend/data/screenshots/*.png
+backend/data/audio_cache/*.mp3
+backend/data/uploads/*_test_lecture_notes.pdf
+backend/test_lecture_notes.pdf
+.vscode/
+.idea/

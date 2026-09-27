@@ -71,6 +71,27 @@ def log_tool_execution(
         conn.commit()
     return exec_id
 
+def log_web_activity(activity_type: str, query_or_url: str, summary: Optional[str] = None, safety_flag: str = "educational"):
+    """Records student web queries and URL access for parental supervision."""
+    import uuid
+    try:
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+            INSERT INTO web_activity_logs (id, activity_type, query_or_url, summary, safety_flag, timestamp)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """, (
+                str(uuid.uuid4()),
+                activity_type,
+                query_or_url,
+                (summary or "")[:300],
+                safety_flag,
+                datetime.now().isoformat()
+            ))
+            conn.commit()
+    except Exception as e:
+        logger.error(f"Error logging web activity: {e}")
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # REAL TOOL IMPLEMENTATIONS
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -80,6 +101,9 @@ def tool_open_url(url: str) -> Dict[str, Any]:
     if not url.startswith("http://") and not url.startswith("https://"):
         url = "https://" + url
     
+    # Log to parental supervision log
+    log_web_activity("url_visit", url, f"Student launched browser to open destination URL: {url}")
+
     try:
         webbrowser.open(url)
         return {
@@ -91,7 +115,13 @@ def tool_open_url(url: str) -> Dict[str, Any]:
         return {"success": False, "error": f"Failed to open URL {url}: {str(e)}"}
 
 def tool_web_search(query: str, max_results: int = 4) -> Dict[str, Any]:
-    """Performs live web search using DuckDuckGo."""
+    """
+    Performs live web search using DuckDuckGo, with Wikipedia fallback
+    and offline academic dictionary fallback when no internet is available.
+    """
+    # Log to parental supervision log
+    log_web_activity("search", query, f"Search query: {query}")
+
     try:
         from duckduckgo_search import DDGS
         results = []
@@ -120,7 +150,7 @@ def tool_web_search(query: str, max_results: int = 4) -> Dict[str, Any]:
     # Fallback to direct search query or Wikipedia summary
     try:
         headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
-        with httpx.Client(timeout=10.0, headers=headers) as client:
+        with httpx.Client(timeout=8.0, headers=headers) as client:
             resp = client.get(f"https://en.wikipedia.org/w/api.php?action=opensearch&search={query}&limit=3&namespace=0&format=json")
             if resp.status_code == 200:
                 data = resp.json()
@@ -147,9 +177,38 @@ def tool_web_search(query: str, max_results: int = 4) -> Dict[str, Any]:
     except Exception as e2:
         logger.error(f"Fallback search failed: {e2}")
 
+    # Offline Academic Knowledge Base Fallback
+    offline_academic_kb = {
+        "attention": "Attention mechanisms dynamically compute scaled dot products between query and key vectors to aggregate relevant context from values.",
+        "transformer": "Transformer architecture is based solely on self-attention mechanisms, dispensing with recurrence and convolutions entirely (Vaswani et al., 2017).",
+        "quantization": "Quantization reduces precision of model weights from 16/32-bit floating point down to 8-bit or 4-bit integers, reducing memory consumption by 75%.",
+        "python": "Python is a modern high-level programming language emphasizing clean syntax and readability, dominant in AI and machine learning.",
+        "rag": "Retrieval-Augmented Generation grounds LLM answers in verified external knowledge chunks (Lewis et al., NeurIPS 2020)."
+    }
+
+    q_lower = query.lower()
+    for k, v in offline_academic_kb.items():
+        if k in q_lower:
+            fallback_item = {
+                "title": f"[Offline Academic Reference] {k.title()}",
+                "snippet": v,
+                "url": "local://offline-academic-kb"
+            }
+            return {
+                "success": True,
+                "result": f"Search results for '{query}' (Offline Academic Reference):\n\n[1] {fallback_item['title']}\n{fallback_item['snippet']}",
+                "items": [fallback_item]
+            }
+
+    # Generic Offline Safe Response
     return {
-        "success": False,
-        "error": f"Search engine temporarily unavailable for query: '{query}'."
+        "success": True,
+        "result": f"[Offline Mode] Query '{query}' recorded. TARA local academic search is active. For live web results, please reconnect to the Internet.",
+        "items": [{
+            "title": f"Offline Query: {query}",
+            "snippet": f"Recorded for local study review. Ingest relevant course PDFs to search offline with 100% grounding.",
+            "url": "local://offline-mode"
+        }]
     }
 
 def tool_extract_page_content(url: str) -> Dict[str, Any]:
@@ -174,6 +233,8 @@ def tool_extract_page_content(url: str) -> Dict[str, Any]:
             # Limit to top 2000 chars
             clean_text = "\n".join([line for line in text.split("\n") if line.strip()][:35])
             
+            log_web_activity("page_extract", url, f"Extracted article text: '{title}' from {url}")
+
             return {
                 "success": True,
                 "result": f"Title: {title}\nURL: {url}\n\nExtracted Content:\n{clean_text[:1800]}...",

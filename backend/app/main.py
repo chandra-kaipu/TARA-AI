@@ -13,7 +13,9 @@ from app.routers import (
     settings as settings_router,
     dashboard,
     voice,
-    analytics
+    analytics,
+    parental,
+    notes
 )
 
 # Initialize Database
@@ -21,7 +23,7 @@ init_db()
 
 app = FastAPI(
     title="TARA — AI Study & Productivity Agent API (KPRIT Major Project)",
-    description="High-performance backend for TARA voice agent, RAG course grounding, and desktop tool automation.",
+    description="High-performance backend for TARA voice agent, RAG course grounding, desktop tool automation, and parental supervision.",
     version="1.0.0"
 )
 
@@ -47,6 +49,8 @@ app.include_router(tools.router)
 app.include_router(settings_router.router)
 app.include_router(voice.router)
 app.include_router(analytics.router)
+app.include_router(parental.router)
+app.include_router(notes.router)
 
 
 @app.get("/api/health")

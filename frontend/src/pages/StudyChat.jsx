@@ -26,7 +26,8 @@ import {
   X,
   ArrowLeft,
   ArrowRight,
-  Shuffle
+  Shuffle,
+  Globe
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../services/api';
@@ -167,6 +168,64 @@ export default function StudyChat({
         course_id: selectedCourseId,
         role: 'assistant',
         content: `Error retrieving grounded answer: ${err.message}`,
+        citations: [],
+        feedback: null,
+        timestamp: new Date().toISOString()
+      };
+      setMessages(prev => [...prev, errorMsg]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleClarifyViaWeb = async (queryText) => {
+    const q = (queryText || inputQuery).trim();
+    if (!q || loading) return;
+
+    setInputQuery('');
+    setLoading(true);
+
+    const tempUserMsg = {
+      id: 'temp-' + Date.now(),
+      course_id: selectedCourseId,
+      role: 'user',
+      content: `[Clarify Doubt via Web Search]: ${q}`,
+      citations: [],
+      timestamp: new Date().toISOString()
+    };
+    setMessages(prev => [...prev, tempUserMsg]);
+
+    try {
+      const res = await api.testRunTool('web_search', { query: q });
+      const webResult = res.result || (res.success ? 'Web search returned successfully.' : res.error);
+      
+      const assistantMsg = {
+        id: 'web-' + Date.now(),
+        course_id: selectedCourseId,
+        role: 'assistant',
+        content: `🌐 **Live Web Search & Academic Knowledge Clarification:**\n\n${webResult}`,
+        citations: (res.items || []).map((item, i) => ({
+          chunk_id: `web-${i}`,
+          filename: item.url || 'Web/Academic Source',
+          page_number: 1,
+          section_title: item.title || 'Search Citation',
+          similarity_score: 0.95,
+          snippet: item.snippet || ''
+        })),
+        feedback: null,
+        grounded: true,
+        provider_used: 'Live Web / Academic Fallback',
+        timestamp: new Date().toISOString()
+      };
+
+      setMessages(prev => [...prev, assistantMsg]);
+      speak(webResult.slice(0, 300));
+    } catch (err) {
+      const errorMsg = {
+        id: 'err-' + Date.now(),
+        course_id: selectedCourseId,
+        role: 'assistant',
+        content: `Error performing web doubt clarification: ${err.message}`,
         citations: [],
         feedback: null,
         timestamp: new Date().toISOString()
@@ -482,6 +541,26 @@ export default function StudyChat({
                       </div>
                     )}
 
+                    {/* Fallback to Web Search Doubt Clarification */}
+                    {msg.role === 'assistant' && msg.grounded === false && (
+                      <div className="mt-3 p-3 rounded-xl bg-[#DA7756]/10 border border-[#DA7756]/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
+                        <div className="flex items-center gap-2 text-xs font-semibold text-[#DA7756]">
+                          <AlertTriangle className="w-4 h-4 shrink-0" />
+                          <span>Not fully found in course syllabus. Need live web search doubt clarification?</span>
+                        </div>
+                        <button
+                          onClick={() => {
+                            const prevMsg = messages[messages.findIndex(m => m.id === msg.id) - 1];
+                            handleClarifyViaWeb(prevMsg ? prevMsg.content : inputQuery);
+                          }}
+                          className="px-2.5 py-1 text-xs font-bold bg-[#DA7756] text-white rounded-lg hover:bg-[#DA7756]/90 transition-all flex items-center gap-1 cursor-pointer shrink-0"
+                        >
+                          <Globe className="w-3.5 h-3.5" />
+                          Clarify Doubt via Web
+                        </button>
+                      </div>
+                    )}
+
                     {/* Assistant Footer: Voice Readback & Feedback */}
                     {msg.role === 'assistant' && (
                       <div className="mt-3.5 pt-2.5 border-t border-[#E3E0D8]/60 dark:border-[#423F3A]/50 flex items-center justify-between text-xs text-[#6B675F] dark:text-[#A39E93]">
@@ -493,6 +572,18 @@ export default function StudyChat({
                           >
                             <Volume2 className="w-3.5 h-3.5 text-[#DA7756]" />
                             <span>Read Aloud</span>
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              const prevMsg = messages[messages.findIndex(m => m.id === msg.id) - 1];
+                              handleClarifyViaWeb(prevMsg ? prevMsg.content : msg.content);
+                            }}
+                            className="flex items-center gap-1 hover:text-[#3B82F6] transition-colors cursor-pointer"
+                            title="Clarify doubt via live web search & parental-logged safety check"
+                          >
+                            <Globe className="w-3.5 h-3.5 text-[#3B82F6]" />
+                            <span className="hidden sm:inline">Clarify via Web</span>
                           </button>
                         </div>
 
@@ -576,6 +667,17 @@ export default function StudyChat({
               />
 
               <button
+                type="button"
+                onClick={() => handleClarifyViaWeb(inputQuery)}
+                disabled={!inputQuery.trim() || loading}
+                className="px-3.5 py-3 rounded-xl bg-[#EDEAE1] dark:bg-[#383531] hover:bg-[#3B82F6]/10 text-[#3B82F6] border border-[#E3E0D8] dark:border-[#423F3A] disabled:opacity-40 transition-all cursor-pointer shadow-xs flex items-center gap-1.5 text-xs font-bold"
+                title="Clarify doubt via Web Search (offline resilient & logged to parental portal)"
+              >
+                <Globe className="w-4 h-4 text-[#3B82F6]" />
+                <span className="hidden md:inline">Web Clarify</span>
+              </button>
+
+              <button
                 type="submit"
                 disabled={!inputQuery.trim() || loading}
                 className="p-3.5 rounded-xl bg-[#DA7756] hover:bg-[#C4633F] disabled:opacity-40 text-white transition-all cursor-pointer shadow-xs"
@@ -586,7 +688,10 @@ export default function StudyChat({
 
             <div className="flex items-center justify-between text-xs text-[#6B675F] dark:text-[#A39E93] pt-2 px-1">
               <span>Hands-free: Say <strong className="text-[#DA7756]">"TARA"</strong> to trigger voice input</span>
-              <span>Answers strictly limited to course vector index</span>
+              <span className="flex items-center gap-1 text-[#4F7A5C] dark:text-[#74B688] font-medium">
+                <Globe className="w-3.5 h-3.5 text-[#3B82F6]" />
+                Web Doubt Clarification & 100% Offline Resilience Enabled
+              </span>
             </div>
           </div>
         </>

@@ -207,5 +207,71 @@
     "document_id": "5d33c406-e780-468c-bb20-7c49b79a77b6",
     "course_id": "sample-cs101",
     "filename": "test_lecture_notes.pdf"
+  },
+  {
+    "id": "7f187524-d452-4bc7-80ec-fa7c56b98e8a",
+    "chunk_index": 0,
+    "page_number": 1,
+    "section_title": "Page 1",
+    "content": "CS 101 Advanced Lecture Notes: Deep Neural Architecture Section 1: Transformer Attention Mechanism The core mechanism behind modern large language models is multi-head self-attention. Attention computes queries (Q), keys (K), and values (V) using linear projections. The scaled dot-product attention formula is Attention(Q, K, V) = softmax(Q * K^T / sqrt(d_k)) * V. This allows models to capture long-range token dependencies in parallel across sequences.",
+    "char_count": 455,
+    "document_id": "636cdd3a-b581-4e69-9ebc-2f401885381e",
+    "course_id": "sample-cs101",
+    "filename": "test_lecture_notes.pdf"
+  },
+  {
+    "id": "3bbcca8a-6d9c-4164-89df-5a2746c88987",
+    "chunk_index": 1,
+    "page_number": 2,
+    "section_title": "Page 2",
+    "content": "Section 2: Quantization and Edge Inference Model quantization reduces numerical precision of weights from FP32 or FP16 down to INT8 or INT4. Techniques such as AWQ (Activation-aware Weight Quantization) and GPTQ minimize perplexity degradation while shrinking memory footprint by 75%, allowing local execution on commodity hardware. The course practical lab requires implementing INT8 dynamic quantization in PyTorch.",
+    "char_count": 417,
+    "document_id": "636cdd3a-b581-4e69-9ebc-2f401885381e",
+    "course_id": "sample-cs101",
+    "filename": "test_lecture_notes.pdf"
+  },
+  {
+    "id": "038e2a84-87bf-4203-9bff-8c870b3ca7c6",
+    "chunk_index": 0,
+    "page_number": 1,
+    "section_title": "Page 1",
+    "content": "CS 101 Advanced Lecture Notes: Deep Neural Architecture Section 1: Transformer Attention Mechanism The core mechanism behind modern large language models is multi-head self-attention. Attention computes queries (Q), keys (K), and values (V) using linear projections. The scaled dot-product attention formula is Attention(Q, K, V) = softmax(Q * K^T / sqrt(d_k)) * V. This allows models to capture long-range token dependencies in parallel across sequences.",
+    "char_count": 455,
+    "document_id": "ad0a4efa-48a8-4356-95b7-6730255bf0cb",
+    "course_id": "sample-cs101",
+    "filename": "test_lecture_notes.pdf"
+  },
+  {
+    "id": "fa33e898-8b15-4e6a-bad7-9c73dc191128",
+    "chunk_index": 1,
+    "page_number": 2,
+    "section_title": "Page 2",
+    "content": "Section 2: Quantization and Edge Inference Model quantization reduces numerical precision of weights from FP32 or FP16 down to INT8 or INT4. Techniques such as AWQ (Activation-aware Weight Quantization) and GPTQ minimize perplexity degradation while shrinking memory footprint by 75%, allowing local execution on commodity hardware. The course practical lab requires implementing INT8 dynamic quantization in PyTorch.",
+    "char_count": 417,
+    "document_id": "ad0a4efa-48a8-4356-95b7-6730255bf0cb",
+    "course_id": "sample-cs101",
+    "filename": "test_lecture_notes.pdf"
+  },
+  {
+    "id": "616dbe42-1f71-419d-9424-8ccca726e439",
+    "chunk_index": 0,
+    "page_number": 1,
+    "section_title": "Page 1",
+    "content": "CS 101 Advanced Lecture Notes: Deep Neural Architecture Section 1: Transformer Attention Mechanism The core mechanism behind modern large language models is multi-head self-attention. Attention computes queries (Q), keys (K), and values (V) using linear projections. The scaled dot-product attention formula is Attention(Q, K, V) = softmax(Q * K^T / sqrt(d_k)) * V. This allows models to capture long-range token dependencies in parallel across sequences.",
+    "char_count": 455,
+    "document_id": "a0ea3c7b-d1ac-4a23-a77f-11f076684d8c",
+    "course_id": "sample-cs101",
+    "filename": "test_lecture_notes.pdf"
+  },
+  {
+    "id": "b4beb67a-53f5-41d1-9e06-20aa22d539c8",
+    "chunk_index": 1,
+    "page_number": 2,
+    "section_title": "Page 2",
+    "content": "Section 2: Quantization and Edge Inference Model quantization reduces numerical precision of weights from FP32 or FP16 down to INT8 or INT4. Techniques such as AWQ (Activation-aware Weight Quantization) and GPTQ minimize perplexity degradation while shrinking memory footprint by 75%, allowing local execution on commodity hardware. The course practical lab requires implementing INT8 dynamic quantization in PyTorch.",
+    "char_count": 417,
+    "document_id": "a0ea3c7b-d1ac-4a23-a77f-11f076684d8c",
+    "course_id": "sample-cs101",
+    "filename": "test_lecture_notes.pdf"
   }
 ]

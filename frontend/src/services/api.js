@@ -295,5 +295,97 @@ export const api = {
       throw new Error(err.detail || 'Failed to generate study summary');
     }
     return res.json();
+  },
+
+  // Parental Supervision & Activity Monitoring
+  verifyParentPin: async (pin) => {
+    const res = await fetch(`${API_BASE}/parental/verify_pin`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pin })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Incorrect PIN');
+    }
+    return res.json();
+  },
+
+  getParentalSummary: async () => {
+    const res = await fetch(`${API_BASE}/parental/summary`);
+    if (!res.ok) throw new Error('Failed to fetch parental summary');
+    return res.json();
+  },
+
+  getParentalWebActivity: async () => {
+    const res = await fetch(`${API_BASE}/parental/web_activity`);
+    if (!res.ok) throw new Error('Failed to fetch web activity logs');
+    return res.json();
+  },
+
+  getParentalStudyTime: async () => {
+    const res = await fetch(`${API_BASE}/parental/study_time`);
+    if (!res.ok) throw new Error('Failed to fetch study session logs');
+    return res.json();
+  },
+
+  logStudySession: async (courseId, sessionType, durationMinutes, notes) => {
+    const res = await fetch(`${API_BASE}/parental/log_session`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        course_id: courseId || 'general',
+        session_type: sessionType,
+        duration_minutes: durationMinutes,
+        notes: notes || ''
+      })
+    });
+    return res.json();
+  },
+
+  getParentalReportUrl: () => `${API_BASE}/parental/export_report`,
+
+  // Laptop Study Notes & Scratchpad
+  listNotes: async (courseId = null) => {
+    const url = courseId ? `${API_BASE}/notes?course_id=${courseId}` : `${API_BASE}/notes`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('Failed to load notes');
+    return res.json();
+  },
+
+  createNote: async (data) => {
+    const res = await fetch(`${API_BASE}/notes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) throw new Error('Failed to create note');
+    return res.json();
+  },
+
+  updateNote: async (noteId, data) => {
+    const res = await fetch(`${API_BASE}/notes/${noteId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) throw new Error('Failed to update note');
+    return res.json();
+  },
+
+  deleteNote: async (noteId) => {
+    const res = await fetch(`${API_BASE}/notes/${noteId}`, {
+      method: 'DELETE'
+    });
+    if (!res.ok) throw new Error('Failed to delete note');
+    return res.json();
+  },
+
+  explainNote: async (noteId) => {
+    const res = await fetch(`${API_BASE}/notes/${noteId}/explain`, {
+      method: 'POST'
+    });
+    if (!res.ok) throw new Error('Failed to generate note explanation');
+    return res.json();
   }
 };

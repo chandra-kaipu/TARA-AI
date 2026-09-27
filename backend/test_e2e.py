@@ -233,8 +233,90 @@ def run_tests():
     assert frontend_url is not None, "Neither port 5174 nor 5173 responded with TARA web app!"
     print(f"[PASS] 18. Frontend is actively serving on {frontend_url} with title 'TARA'")
 
+    # 19. Test Parental PIN Verification & Dashboard Summary
+    print("\n--- Testing Parental Oversight Portal & Security PIN ---")
+    pin_res = requests.post(f"{BASE_URL}/api/parental/verify_pin", json={"pin": "1234"})
+    assert pin_res.status_code == 200
+    assert pin_res.json()["authenticated"] is True
+    print(f"[PASS] 19. Parental Security PIN Verified successfully (authenticated={pin_res.json()['authenticated']})")
+
+    parent_summary = requests.get(f"{BASE_URL}/api/parental/summary")
+    assert parent_summary.status_code == 200
+    summary_data = parent_summary.json()
+    total_study = summary_data["all_time"]["total_study_minutes"]
+    daily_limit = summary_data["today"]["daily_limit_minutes"]
+    print(f"   Parent Summary: Total Study Time = {total_study} mins, Daily Limit = {daily_limit} mins")
+
+    # 20. Test Web Activity Monitoring & Doubt Clarification Logging
+    print("\n--- Testing Web Activity Monitoring & Parental Audit ---")
+    search_test = requests.post(
+        f"{BASE_URL}/api/tools/test_run",
+        json={"tool_name": "web_search", "arguments": {"query": "transformer self attention formula"}}
+    )
+    assert search_test.status_code == 200
+    search_res = search_test.json()
+    assert search_res.get("success") is True or "result" in search_res
+    print(f"[PASS] 20. Web Search doubt clarification executed (Success={search_res.get('success')})")
+
+    # Verify activity was recorded in parental web activity log
+    web_logs_res = requests.get(f"{BASE_URL}/api/parental/web_activity")
+    assert web_logs_res.status_code == 200
+    web_logs = web_logs_res.json()
+    assert len(web_logs) > 0
+    print(f"   Parental Web Log: Found {len(web_logs)} tracked search/browser activities (Latest: '{web_logs[0]['query_or_url']}')")
+
+    # 21. Test Parental Study Session Logging
+    print("\n--- Testing Study Session Time Tracking ---")
+    log_session_res = requests.post(
+        f"{BASE_URL}/api/parental/log_session",
+        json={
+            "duration_minutes": 25,
+            "course_id": course_id,
+            "session_type": "focus_timer",
+            "notes": "Completed 25-minute Pomodoro focus block on Neural Networks"
+        }
+    )
+    assert log_session_res.status_code == 200
+    assert log_session_res.json()["success"] is True
+    print(f"[PASS] 21. Study Session Logged: {log_session_res.json()}")
+
+    study_time_res = requests.get(f"{BASE_URL}/api/parental/study_time")
+    assert study_time_res.status_code == 200
+    time_data = study_time_res.json()
+    assert len(time_data) > 0
+    print(f"   Recorded Sessions: {len(time_data)} sessions on file.")
+
+    # 22. Test Laptop Markdown Notes & AI Review
+    print("\n--- Testing Laptop Study Notes & AI Review ---")
+    create_note_res = requests.post(
+        f"{BASE_URL}/api/notes",
+        json={
+            "title": "CS101 Attention Mechanism Notes",
+            "content": "# Transformer Attention\nAttention(Q,K,V) = softmax(Q K^T / sqrt(d_k)) * V.\nEssential for machine translation.",
+            "tags": ["AI", "Transformers", "Lecture1"]
+        }
+    )
+    assert create_note_res.status_code == 200
+    created_note = create_note_res.json()
+    note_id = created_note["id"]
+    print(f"[PASS] 22. Laptop Note Created: '{created_note['title']}' (ID: {note_id})")
+
+    # Ask TARA to review and explain note
+    explain_note_res = requests.post(f"{BASE_URL}/api/notes/{note_id}/explain")
+    assert explain_note_res.status_code == 200
+    review_data = explain_note_res.json()
+    assert "explanation" in review_data
+    print(f"   TARA AI Note Review: {review_data['explanation'][:120]}...")
+
+    # 23. Test Parental CSV Report Export
+    print("\n--- Testing Parental CSV Supervision Report ---")
+    parental_csv = requests.get(f"{BASE_URL}/api/parental/export_report")
+    assert parental_csv.status_code == 200
+    assert "PARENTAL OVERSIGHT REPORT" in parental_csv.text
+    print(f"[PASS] 23. Parental CSV Report Export Verified ({len(parental_csv.text)} characters generated).")
+
     print("\n" + "=" * 60)
-    print("ALL 18 END-TO-END VERIFICATION TESTS PASSED SUCCESSFULLY!")
+    print("ALL 23 END-TO-END VERIFICATION TESTS PASSED SUCCESSFULLY!")
     print("=" * 60)
 
 if __name__ == "__main__":

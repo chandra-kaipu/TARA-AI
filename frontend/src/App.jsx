@@ -10,6 +10,8 @@ import AgentChat from './pages/AgentChat';
 import ToolsPermissions from './pages/ToolsPermissions';
 import Settings from './pages/Settings';
 import PilotEvaluation from './pages/PilotEvaluation';
+import ParentalPortal from './pages/ParentalPortal';
+import LaptopNotes from './pages/LaptopNotes';
 
 function MainApp() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -23,8 +25,12 @@ function MainApp() {
         return { title: 'Course Vector Knowledge Bases', subtitle: 'Isolated FAISS vector indexes and document chunking manager' };
       case 'study':
         return { title: 'Course Grounded Study Chat', subtitle: 'Voice-first question answering strictly derived from your course PDFs' };
+      case 'notes':
+        return { title: 'Laptop Study Scratchpad & Notes', subtitle: 'PC-optimized Markdown editor, formula scratchpad, and AI note explanation' };
       case 'agent':
         return { title: 'General Productivity Agent', subtitle: 'Autonomous conversational assistant with OS & browser automation tools' };
+      case 'parental':
+        return { title: 'Parental Oversight & Safety Portal', subtitle: 'Supervise daily study hours, focus timer sessions, and monitored web searches' };
       case 'evaluation':
         return { title: 'Pilot Evaluation & Feedback Analytics', subtitle: '4th Year Major Project rubric • KPRIT student feedback & RAG grounding verification' };
       case 'tools':
@@ -68,8 +74,16 @@ function MainApp() {
               setActiveTab={setActiveTab} 
             />
           )}
+          {activeTab === 'notes' && (
+            <LaptopNotes 
+              selectedCourseId={selectedCourseId} 
+            />
+          )}
           {activeTab === 'agent' && (
             <AgentChat />
+          )}
+          {activeTab === 'parental' && (
+            <ParentalPortal />
           )}
           {activeTab === 'evaluation' && (
             <PilotEvaluation 
