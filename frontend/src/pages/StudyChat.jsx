@@ -27,7 +27,13 @@ import {
   ArrowLeft,
   ArrowRight,
   Shuffle,
-  Globe
+  Globe,
+  Network,
+  Activity,
+  TrendingUp,
+  Award,
+  Zap,
+  Brain
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../services/api';
@@ -46,21 +52,35 @@ export default function StudyChat({
   const [loading, setLoading] = useState(false);
   const [chatLoading, setChatLoading] = useState(false);
 
-  // Active Mode: 'chat' | 'quiz' | 'flashcards' | 'summary'
+  // Active Mode: 'chat' | 'quiz' | 'flashcards' | 'mindmap' | 'summary'
   const [studyMode, setStudyMode] = useState('chat');
 
-  // Quiz State
+  // Quiz State & Exam Readiness
   const [quizQuestions, setQuizQuestions] = useState([]);
   const [quizLoading, setQuizLoading] = useState(false);
   const [selectedAnswers, setSelectedAnswers] = useState({});
   const [quizCount, setQuizCount] = useState(5);
   const [quizTopic, setQuizTopic] = useState('');
+  const [readinessData, setReadinessData] = useState(null);
+  const [readinessLoading, setReadinessLoading] = useState(false);
+  const [showReadinessModal, setShowReadinessModal] = useState(false);
 
-  // Flashcards State
+  // Flashcards & Leitner Spaced Repetition State
   const [flashcards, setFlashcards] = useState([]);
   const [cardLoading, setCardLoading] = useState(false);
   const [currentCardIdx, setCurrentCardIdx] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
+  const [flashcardMastery, setFlashcardMastery] = useState({
+    mastery_percentage: 0,
+    box_1_learning: 0,
+    box_2_familiar: 0,
+    box_3_mastered: 0
+  });
+
+  // Mind Map & Concept Knowledge Graph State
+  const [mindmapData, setMindmapData] = useState(null);
+  const [mindmapLoading, setMindmapLoading] = useState(false);
+  const [selectedNode, setSelectedNode] = useState(null);
 
   // Exam Summary State
   const [summaryData, setSummaryData] = useState(null);
@@ -126,6 +146,13 @@ export default function StudyChat({
     setSelectedAnswers({});
     setFlashcards([]);
     setSummaryData(null);
+    setMindmapData(null);
+    setSelectedNode(null);
+
+    if (selectedCourseId) {
+      api.getFlashcardsMastery(selectedCourseId).then(setFlashcardMastery).catch(() => {});
+      api.getExamReadiness(selectedCourseId).then(setReadinessData).catch(() => {});
+    }
   }, [selectedCourseId]);
 
   const handleSubmitQuery = async (queryText) => {
@@ -285,7 +312,7 @@ export default function StudyChat({
     }
   };
 
-  // ─── QUIZ HANDLERS ───
+  // ─── QUIZ & EXAM READINESS HANDLERS ───
   const handleGenerateQuiz = async () => {
     if (!selectedCourseId) return;
     try {
@@ -300,12 +327,41 @@ export default function StudyChat({
     }
   };
 
-  const handleSelectAnswer = (questionId, optionIdx) => {
-    if (selectedAnswers[questionId] !== undefined) return; // already answered
-    setSelectedAnswers(prev => ({ ...prev, [questionId]: optionIdx }));
+  const handleSelectAnswer = async (questionId, optionIdx) => {
+    if (selectedAnswers[questionId] !== undefined) return;
+    const updated = { ...selectedAnswers, [questionId]: optionIdx };
+    setSelectedAnswers(updated);
+
+    // If all questions are answered, submit score to backend to update Exam Readiness!
+    if (Object.keys(updated).length === quizQuestions.length) {
+      const correct = quizQuestions.reduce((acc, q) => {
+        return updated[q.id] === q.correct_index ? acc + 1 : acc;
+      }, 0);
+      try {
+        await api.submitQuizResults(selectedCourseId, quizTopic || 'Practice Exam', quizQuestions.length, correct, updated);
+        const r = await api.getExamReadiness(selectedCourseId);
+        setReadinessData(r);
+      } catch (err) {
+        console.error('Quiz submit error:', err);
+      }
+    }
   };
 
-  // ─── FLASHCARDS HANDLERS ───
+  const handleLoadReadiness = async () => {
+    if (!selectedCourseId) return;
+    try {
+      setReadinessLoading(true);
+      const r = await api.getExamReadiness(selectedCourseId);
+      setReadinessData(r);
+      setShowReadinessModal(true);
+    } catch (err) {
+      alert(`Error loading readiness: ${err.message}`);
+    } finally {
+      setReadinessLoading(false);
+    }
+  };
+
+  // ─── FLASHCARDS & LEITNER SPACED REPETITION HANDLERS ───
   const handleGenerateFlashcards = async () => {
     if (!selectedCourseId) return;
     try {
@@ -314,10 +370,45 @@ export default function StudyChat({
       setIsFlipped(false);
       const res = await api.generateFlashcards(selectedCourseId, 6);
       setFlashcards(res.flashcards || []);
+      const m = await api.getFlashcardsMastery(selectedCourseId);
+      setFlashcardMastery(m);
     } catch (err) {
       alert(`Flashcards error: ${err.message}`);
     } finally {
       setCardLoading(false);
+    }
+  };
+
+  const handleDrillFlashcard = async (result) => {
+    const card = flashcards[currentCardIdx];
+    if (!card || !selectedCourseId) return;
+
+    try {
+      await api.drillFlashcard(selectedCourseId, card.front, card.back, result);
+      const m = await api.getFlashcardsMastery(selectedCourseId);
+      setFlashcardMastery(m);
+    } catch (err) {
+      console.error('Flashcard drill error:', err);
+    }
+
+    setIsFlipped(false);
+    setCurrentCardIdx(prev => (prev < flashcards.length - 1 ? prev + 1 : 0));
+  };
+
+  // ─── CONCEPT MIND MAP & KNOWLEDGE GRAPH HANDLERS ───
+  const handleGenerateMindMap = async () => {
+    if (!selectedCourseId) return;
+    try {
+      setMindmapLoading(true);
+      const res = await api.generateMindMap(selectedCourseId);
+      setMindmapData(res);
+      if (res.nodes && res.nodes.length > 0) {
+        setSelectedNode(res.nodes[0]);
+      }
+    } catch (err) {
+      alert(`Mind map generation error: ${err.message}`);
+    } finally {
+      setMindmapLoading(false);
     }
   };
 
@@ -435,6 +526,21 @@ export default function StudyChat({
           >
             <Layers className="w-3.5 h-3.5" />
             Flashcards
+          </button>
+
+          <button
+            onClick={() => {
+              setStudyMode('mindmap');
+              if (!mindmapData) handleGenerateMindMap();
+            }}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs md:text-sm font-semibold transition-all cursor-pointer ${
+              studyMode === 'mindmap'
+                ? 'bg-[#FFFFFF] dark:bg-[#262523] text-[#DA7756] shadow-2xs'
+                : 'text-[#6B675F] dark:text-[#A39E93] hover:text-[#1F1E1D] dark:hover:text-[#F5F4EF]'
+            }`}
+          >
+            <Network className="w-3.5 h-3.5" />
+            Mind Map
           </button>
 
           <button
@@ -725,6 +831,16 @@ export default function StudyChat({
               </select>
 
               <button
+                onClick={handleLoadReadiness}
+                disabled={readinessLoading}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-[#4F7A5C]/40 bg-[#4F7A5C]/10 text-[#4F7A5C] hover:bg-[#4F7A5C]/20 text-xs font-bold transition-all shadow-xs cursor-pointer"
+                title="View overall exam readiness index & topic mastery heatmap"
+              >
+                {readinessLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <TrendingUp className="w-3.5 h-3.5" />}
+                Readiness Diagnostic
+              </button>
+
+              <button
                 onClick={handleGenerateQuiz}
                 disabled={quizLoading}
                 className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#DA7756] hover:bg-[#C4633F] text-white text-xs font-bold transition-all shadow-xs cursor-pointer disabled:opacity-50"
@@ -734,6 +850,75 @@ export default function StudyChat({
               </button>
             </div>
           </div>
+
+          {/* Exam Readiness & Topic Weakness Diagnostic Panel */}
+          {readinessData && (
+            <div className="p-6 rounded-2xl bg-[#FFFFFF] dark:bg-[#2E2C29] border border-[#E3E0D8] dark:border-[#423F3A] shadow-xs space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-[#E3E0D8] dark:border-[#423F3A]">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-[#4F7A5C]/15 text-[#4F7A5C]">
+                    <Award className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-sm text-[#1F1E1D] dark:text-[#F5F4EF]">
+                      Exam Readiness Index: <span className="text-[#4F7A5C]">{readinessData.readiness_score}%</span>
+                    </h4>
+                    <p className="text-xs text-[#6B675F] dark:text-[#A39E93]">
+                      Status: {readinessData.readiness_status} ({readinessData.total_questions_answered} questions analyzed)
+                    </p>
+                  </div>
+                </div>
+                <div className="w-48 bg-[#EDEAE1] dark:bg-[#383531] h-3 rounded-full overflow-hidden">
+                  <div 
+                    className="bg-[#4F7A5C] h-full rounded-full transition-all duration-500"
+                    style={{ width: `${Math.min(100, readinessData.readiness_score)}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Topic Weakness Heatmap */}
+              {readinessData.topic_heatmap && readinessData.topic_heatmap.length > 0 && (
+                <div>
+                  <div className="text-xs font-bold uppercase tracking-wider text-[#6B675F] dark:text-[#A39E93] mb-2">
+                    Topic Mastery Heatmap:
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+                    {readinessData.topic_heatmap.map((thm, i) => (
+                      <div key={i} className="p-3 rounded-xl bg-[#F5F4EF] dark:bg-[#262523] border border-[#E3E0D8] dark:border-[#423F3A] space-y-1.5">
+                        <div className="flex items-center justify-between text-xs font-semibold">
+                          <span className="truncate max-w-[130px]">{thm.topic}</span>
+                          <span className={thm.mastery >= 80 ? 'text-[#4F7A5C] font-bold' : thm.mastery >= 50 ? 'text-[#DA7756] font-bold' : 'text-[#D04F4F] font-bold'}>
+                            {thm.mastery}%
+                          </span>
+                        </div>
+                        <div className="w-full bg-[#EDEAE1] dark:bg-[#383531] h-1.5 rounded-full overflow-hidden">
+                          <div 
+                            className={`h-full rounded-full ${thm.mastery >= 80 ? 'bg-[#4F7A5C]' : thm.mastery >= 50 ? 'bg-[#DA7756]' : 'bg-[#D04F4F]'}`}
+                            style={{ width: `${Math.min(100, thm.mastery)}%` }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Recommended Focus Action Items */}
+              {readinessData.recommended_focus && (
+                <div className="p-3.5 rounded-xl bg-[#DA7756]/10 border border-[#DA7756]/30 text-xs space-y-1.5">
+                  <div className="font-bold text-[#DA7756] flex items-center gap-1.5">
+                    <Zap className="w-3.5 h-3.5" /> Recommended High-Yield Focus:
+                  </div>
+                  {readinessData.recommended_focus.map((rec, rIdx) => (
+                    <div key={rIdx} className="text-[#1F1E1D] dark:text-[#F5F4EF] flex items-start gap-1.5">
+                      <span>•</span>
+                      <span>{rec}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Running Score Banner */}
           {quizQuestions.length > 0 && totalAnswered > 0 && (
@@ -880,6 +1065,27 @@ export default function StudyChat({
             </div>
           ) : (
             <div className="w-full max-w-xl space-y-6">
+              {/* Leitner Box Spaced Repetition Mastery Header */}
+              <div className="p-4 rounded-2xl bg-[#FFFFFF] dark:bg-[#2E2C29] border border-[#E3E0D8] dark:border-[#423F3A] flex flex-wrap items-center justify-between gap-3 shadow-xs">
+                <div className="flex items-center gap-2">
+                  <Brain className="w-5 h-5 text-[#DA7756]" />
+                  <span className="text-xs font-bold text-[#1F1E1D] dark:text-[#F5F4EF]">
+                    Spaced Repetition Mastery: <span className="text-[#4F7A5C]">{flashcardMastery.mastery_percentage}%</span>
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="px-2 py-0.5 rounded-md bg-[#D04F4F]/10 text-[#D04F4F] font-bold">
+                    Box 1 (Learning): {flashcardMastery.box_1_learning}
+                  </span>
+                  <span className="px-2 py-0.5 rounded-md bg-[#DA7756]/10 text-[#DA7756] font-bold">
+                    Box 2 (Familiar): {flashcardMastery.box_2_familiar}
+                  </span>
+                  <span className="px-2 py-0.5 rounded-md bg-[#4F7A5C]/10 text-[#4F7A5C] font-bold">
+                    Box 3 (Mastered): {flashcardMastery.box_3_mastered}
+                  </span>
+                </div>
+              </div>
+
               {/* Card Indicator */}
               <div className="flex items-center justify-between text-xs font-mono font-bold text-[#6B675F] dark:text-[#A39E93]">
                 <span>Flashcard {currentCardIdx + 1} of {flashcards.length}</span>
@@ -918,6 +1124,26 @@ export default function StudyChat({
                 </div>
               </div>
 
+              {/* Spaced Repetition Drill Buttons */}
+              {isFlipped && (
+                <div className="grid grid-cols-2 gap-3 pt-1">
+                  <button
+                    onClick={() => handleDrillFlashcard('need_review')}
+                    className="flex items-center justify-center gap-2 py-3 rounded-xl border border-[#DA7756]/40 bg-[#DA7756]/10 hover:bg-[#DA7756]/20 text-[#DA7756] text-xs font-bold transition-all cursor-pointer shadow-xs"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                    Need Review (Box 1)
+                  </button>
+                  <button
+                    onClick={() => handleDrillFlashcard('got_it')}
+                    className="flex items-center justify-center gap-2 py-3 rounded-xl border border-[#4F7A5C]/40 bg-[#4F7A5C]/15 hover:bg-[#4F7A5C]/25 text-[#4F7A5C] text-xs font-bold transition-all cursor-pointer shadow-xs"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    Got It! (Advance Box)
+                  </button>
+                </div>
+              )}
+
               {/* Navigation Controls */}
               <div className="flex items-center justify-between gap-4">
                 <button
@@ -954,7 +1180,208 @@ export default function StudyChat({
       )}
 
       {/* ═══════════════════════════════════════════════════════════ */}
-      {/* MODE 4: EXAM REVISION GUIDE / CHEAT SHEET                   */}
+      {/* MODE 4: INTERACTIVE CONCEPT MIND MAP & KNOWLEDGE GRAPH      */}
+      {/* ═══════════════════════════════════════════════════════════ */}
+      {studyMode === 'mindmap' && (
+        <div className="flex-1 overflow-y-auto py-6 space-y-6 pr-2">
+          {/* Header Action Bar */}
+          <div className="p-5 rounded-2xl bg-[#FFFFFF] dark:bg-[#2E2C29] border border-[#E3E0D8] dark:border-[#423F3A] flex flex-wrap items-center justify-between gap-4 shadow-xs">
+            <div>
+              <h3 className="font-serif-claude text-xl font-bold text-[#1F1E1D] dark:text-[#F5F4EF] flex items-center gap-2">
+                <Network className="w-5 h-5 text-[#DA7756]" />
+                Interactive Concept Knowledge Graph & Mind Map
+              </h3>
+              <p className="text-xs text-[#6B675F] dark:text-[#A39E93] mt-0.5">
+                Visual relationship network extracted from {activeCourse?.name || 'course'} materials. Click any node to inspect definitions & citations.
+              </p>
+            </div>
+
+            <button
+              onClick={handleGenerateMindMap}
+              disabled={mindmapLoading}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#DA7756] hover:bg-[#C4633F] text-white text-xs font-bold transition-all shadow-xs cursor-pointer disabled:opacity-50"
+            >
+              {mindmapLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+              {mindmapData ? 'Regenerate Graph' : 'Build Concept Map'}
+            </button>
+          </div>
+
+          {mindmapLoading ? (
+            <div className="py-24 text-center space-y-3">
+              <Loader2 className="w-8 h-8 animate-spin text-[#DA7756] mx-auto" />
+              <p className="text-sm text-[#6B675F] dark:text-[#A39E93]">
+                Synthesizing multi-tier concept relationships and formula dependencies...
+              </p>
+            </div>
+          ) : !mindmapData ? (
+            <div className="py-16 text-center space-y-4">
+              <Network className="w-12 h-12 text-[#DA7756] mx-auto opacity-70" />
+              <p className="text-sm text-[#6B675F] dark:text-[#A39E93]">
+                No concept graph generated yet. Click "Build Concept Map" to visualize connections.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Visual Node Graph Canvas */}
+              <div className="lg:col-span-2 p-6 rounded-3xl bg-[#FFFFFF] dark:bg-[#2E2C29] border border-[#E3E0D8] dark:border-[#423F3A] shadow-xs space-y-4">
+                <div className="flex items-center justify-between text-xs text-[#6B675F] dark:text-[#A39E93] pb-2 border-b border-[#E3E0D8]/60 dark:border-[#423F3A]/60">
+                  <span className="font-semibold">{mindmapData.concept_count} Interconnected Nodes Found</span>
+                  <span>Click any concept node to inspect</span>
+                </div>
+
+                {/* SVG Visual Graph */}
+                <div className="relative w-full h-[450px] bg-[#F5F4EF]/70 dark:bg-[#262523]/70 rounded-2xl border border-[#E3E0D8] dark:border-[#423F3A] overflow-hidden flex items-center justify-center p-4">
+                  <svg className="absolute inset-0 w-full h-full pointer-events-none">
+                    {/* Render Edge Lines with Relationship Labels */}
+                    {mindmapData.edges && mindmapData.edges.slice(0, 14).map((edge, idx) => {
+                      const total = mindmapData.nodes.length;
+                      const sIdx = mindmapData.nodes.findIndex(n => n.id === edge.source);
+                      const tIdx = mindmapData.nodes.findIndex(n => n.id === edge.target);
+
+                      const cx = 250;
+                      const cy = 210;
+                      const r = 140;
+
+                      const sx = sIdx === 0 ? cx : cx + r * Math.cos((sIdx * 2 * Math.PI) / (total || 1));
+                      const sy = sIdx === 0 ? cy : cy + r * Math.sin((sIdx * 2 * Math.PI) / (total || 1));
+                      const tx = tIdx === 0 ? cx : cx + r * Math.cos((tIdx * 2 * Math.PI) / (total || 1));
+                      const ty = tIdx === 0 ? cy : cy + r * Math.sin((tIdx * 2 * Math.PI) / (total || 1));
+
+                      return (
+                        <g key={idx}>
+                          <line
+                            x1={sx}
+                            y1={sy}
+                            x2={tx}
+                            y2={ty}
+                            stroke="#DA7756"
+                            strokeWidth="2"
+                            strokeOpacity="0.45"
+                            strokeDasharray="4 2"
+                          />
+                        </g>
+                      );
+                    })}
+                  </svg>
+
+                  {/* Render Circular Concept Nodes */}
+                  <div className="relative w-full h-full">
+                    {mindmapData.nodes.map((node, nIdx) => {
+                      const total = mindmapData.nodes.length;
+                      const isRoot = node.id === 'node_root' || nIdx === 0;
+                      const isSelected = selectedNode?.id === node.id;
+
+                      let posStyle = {};
+                      if (isRoot) {
+                        posStyle = { top: '45%', left: '50%', transform: 'translate(-50%, -50%)' };
+                      } else {
+                        const angle = (nIdx * 2 * Math.PI) / (total - 1);
+                        const radiusX = 40; // %
+                        const radiusY = 38; // %
+                        const top = 50 + radiusY * Math.sin(angle);
+                        const left = 50 + radiusX * Math.cos(angle);
+                        posStyle = { top: `${top}%`, left: `${left}%`, transform: 'translate(-50%, -50%)' };
+                      }
+
+                      return (
+                        <button
+                          key={node.id}
+                          onClick={() => setSelectedNode(node)}
+                          style={posStyle}
+                          className={`absolute z-10 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-md flex items-center gap-1.5 ${
+                            isSelected
+                              ? 'ring-3 ring-[#DA7756] scale-110 bg-[#DA7756] text-white'
+                              : isRoot
+                              ? 'bg-[#1F1E1D] text-white dark:bg-[#FFFFFF] dark:text-[#1F1E1D]'
+                              : node.category === 'formula'
+                              ? 'bg-[#4F7A5C] text-white'
+                              : 'bg-[#EDEAE1] dark:bg-[#383531] text-[#1F1E1D] dark:text-[#F5F4EF] hover:border-[#DA7756]'
+                          }`}
+                        >
+                          <span className="w-2 h-2 rounded-full bg-current opacity-80" />
+                          <span className="truncate max-w-[120px]">{node.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Legend */}
+                <div className="flex flex-wrap items-center gap-3 pt-2 text-xs text-[#6B675F] dark:text-[#A39E93]">
+                  <span className="flex items-center gap-1 font-semibold">
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#1F1E1D] dark:bg-white" /> Course Root
+                  </span>
+                  <span className="flex items-center gap-1 font-semibold">
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#4F7A5C]" /> Formula / Derivation
+                  </span>
+                  <span className="flex items-center gap-1 font-semibold">
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#EDEAE1] dark:bg-[#383531]" /> Concept Topic
+                  </span>
+                </div>
+              </div>
+
+              {/* Concept Node Inspector Drawer */}
+              <div className="p-6 rounded-3xl bg-[#FFFFFF] dark:bg-[#2E2C29] border border-[#E3E0D8] dark:border-[#423F3A] shadow-xs flex flex-col justify-between space-y-4">
+                {selectedNode ? (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-[#DA7756]/15 text-[#DA7756]">
+                        {selectedNode.category} Node
+                      </span>
+                      <span className="text-xs text-[#6B675F] dark:text-[#A39E93] font-mono">
+                        Page {selectedNode.page_ref}
+                      </span>
+                    </div>
+
+                    <div>
+                      <h4 className="font-serif-claude text-xl font-bold text-[#1F1E1D] dark:text-[#F5F4EF]">
+                        {selectedNode.label}
+                      </h4>
+                      <p className="text-xs text-[#4F7A5C] font-semibold mt-1">
+                        Verified Source: {selectedNode.doc_ref}
+                      </p>
+                    </div>
+
+                    <div className="p-4 rounded-2xl bg-[#F5F4EF] dark:bg-[#262523] border border-[#E3E0D8] dark:border-[#423F3A] text-xs md:text-sm text-[#1F1E1D] dark:text-[#F5F4EF] leading-relaxed">
+                      {selectedNode.description}
+                    </div>
+
+                    <div className="text-xs text-[#6B675F] dark:text-[#A39E93] space-y-1">
+                      <div className="font-semibold">Connected Relationships:</div>
+                      {mindmapData.edges
+                        ?.filter(e => e.source === selectedNode.id || e.target === selectedNode.id)
+                        .slice(0, 3)
+                        .map((rel, rIdx) => (
+                          <div key={rIdx} className="flex items-center gap-1.5 text-[11px] font-mono">
+                            <ArrowRight className="w-3 h-3 text-[#DA7756]" />
+                            <span>{rel.relation} → {mindmapData.nodes.find(n => n.id === (rel.source === selectedNode.id ? rel.target : rel.source))?.label}</span>
+                          </div>
+                        ))}
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        setStudyMode('chat');
+                        handleSubmitQuery(`Explain the concept of ${selectedNode.label} and how it connects to the course.`);
+                      }}
+                      className="w-full mt-4 py-2.5 px-4 rounded-xl bg-[#DA7756] hover:bg-[#C4633F] text-white text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <Sparkles className="w-4 h-4" /> Ask TARA About This Concept
+                    </button>
+                  </div>
+                ) : (
+                  <div className="my-auto text-center py-12 text-[#6B675F] dark:text-[#A39E93] text-xs">
+                    Click any node in the visual graph to view definition and verified citations.
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════ */}
+      {/* MODE 5: EXAM REVISION GUIDE / CHEAT SHEET                   */}
       {/* ═══════════════════════════════════════════════════════════ */}
       {studyMode === 'summary' && (
         <div className="flex-1 overflow-y-auto py-6 space-y-6 pr-2">

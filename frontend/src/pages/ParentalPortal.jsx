@@ -15,7 +15,10 @@ import {
   Layers,
   Search,
   Eye,
-  Activity
+  Activity,
+  Target,
+  Plus,
+  CheckSquare
 } from 'lucide-react';
 import { api } from '../services/api';
 
@@ -28,7 +31,11 @@ export default function ParentalPortal() {
   const [summary, setSummary] = useState(null);
   const [webLogs, setWebLogs] = useState([]);
   const [studyLogs, setStudyLogs] = useState([]);
-  const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'web' | 'study_time'
+  const [goals, setGoals] = useState([]);
+  const [newGoalTitle, setNewGoalTitle] = useState('');
+  const [newGoalType, setNewGoalType] = useState('study_time');
+  const [newGoalValue, setNewGoalValue] = useState(50);
+  const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'web' | 'study_time' | 'goals'
   const [loadingData, setLoadingData] = useState(false);
 
   const handleVerifyPin = async (e) => {
@@ -51,18 +58,42 @@ export default function ParentalPortal() {
   const loadPortalData = async () => {
     try {
       setLoadingData(true);
-      const [sumRes, webRes, studyRes] = await Promise.all([
+      const [sumRes, webRes, studyRes, goalsRes] = await Promise.all([
         api.getParentalSummary(),
         api.getParentalWebActivity(),
-        api.getParentalStudyTime()
+        api.getParentalStudyTime(),
+        api.getParentalGoals()
       ]);
       setSummary(sumRes);
       setWebLogs(webRes);
       setStudyLogs(studyRes);
+      setGoals(goalsRes || []);
     } catch (err) {
       console.error('Error loading parental data:', err);
     } finally {
       setLoadingData(false);
+    }
+  };
+
+  const handleCreateGoal = async (e) => {
+    e.preventDefault();
+    if (!newGoalTitle.trim()) return;
+    try {
+      await api.createParentalGoal(newGoalTitle, newGoalType, Number(newGoalValue));
+      setNewGoalTitle('');
+      const updated = await api.getParentalGoals();
+      setGoals(updated);
+    } catch (err) {
+      alert(`Error creating goal: ${err.message}`);
+    }
+  };
+
+  const handleToggleGoal = async (goalId) => {
+    try {
+      await api.toggleParentalGoal(goalId);
+      setGoals(prev => prev.map(g => g.id === goalId ? { ...g, is_completed: !g.is_completed } : g));
+    } catch (err) {
+      console.error('Toggle error:', err);
     }
   };
 
@@ -273,6 +304,18 @@ export default function ParentalPortal() {
           <Clock className="w-4 h-4" />
           Detailed Study Sessions ({studyLogs.length})
         </button>
+
+        <button
+          onClick={() => setActiveTab('goals')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs md:text-sm font-bold transition-all cursor-pointer ${
+            activeTab === 'goals'
+              ? 'bg-[#DA7756] text-white shadow-xs'
+              : 'text-[#6B675F] dark:text-[#A39E93] hover:text-[#1F1E1D] dark:hover:text-[#F5F4EF]'
+          }`}
+        >
+          <Target className="w-4 h-4" />
+          Daily Goals & Contract ({goals.filter(g => g.is_completed).length}/{goals.length})
+        </button>
       </div>
 
       {/* Tab 1: Course Breakdown */}
@@ -407,6 +450,105 @@ export default function ParentalPortal() {
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Tab 4: Daily Goals & Contract */}
+      {activeTab === 'goals' && (
+        <div className="space-y-6">
+          {/* Add New Goal Card */}
+          <div className="p-6 rounded-3xl bg-[#FFFFFF] dark:bg-[#2E2C29] border border-[#E3E0D8] dark:border-[#423F3A] shadow-xs space-y-4">
+            <div className="flex items-center gap-2">
+              <Target className="w-5 h-5 text-[#DA7756]" />
+              <h3 className="font-serif-claude text-lg font-bold text-[#1F1E1D] dark:text-[#F5F4EF]">
+                Set Daily Study Goal & Academic Target
+              </h3>
+            </div>
+            <form onSubmit={handleCreateGoal} className="flex flex-col sm:flex-row gap-3">
+              <input
+                type="text"
+                placeholder="e.g., Complete 30 min focus session or score 85%+ on Quiz"
+                value={newGoalTitle}
+                onChange={(e) => setNewGoalTitle(e.target.value)}
+                className="flex-1 px-4 py-2.5 text-xs rounded-xl border border-[#E3E0D8] dark:border-[#423F3A] bg-[#F5F4EF] dark:bg-[#262523] text-[#1F1E1D] dark:text-[#F5F4EF] focus:outline-none focus:border-[#DA7756]"
+              />
+              <select
+                value={newGoalType}
+                onChange={(e) => setNewGoalType(e.target.value)}
+                className="px-3 py-2.5 text-xs rounded-xl border border-[#E3E0D8] dark:border-[#423F3A] bg-[#F5F4EF] dark:bg-[#262523] text-[#1F1E1D] dark:text-[#F5F4EF] font-semibold"
+              >
+                <option value="study_time">Study Time (Mins)</option>
+                <option value="quiz_score">Quiz Score (%)</option>
+                <option value="focus_blocks">Focus Intervals</option>
+              </select>
+              <input
+                type="number"
+                value={newGoalValue}
+                onChange={(e) => setNewGoalValue(e.target.value)}
+                className="w-20 px-3 py-2.5 text-xs text-center font-mono rounded-xl border border-[#E3E0D8] dark:border-[#423F3A] bg-[#F5F4EF] dark:bg-[#262523] text-[#1F1E1D] dark:text-[#F5F4EF]"
+              />
+              <button
+                type="submit"
+                className="flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-xl bg-[#DA7756] hover:bg-[#C4633F] text-white text-xs font-bold transition-all shadow-xs cursor-pointer shrink-0"
+              >
+                <Plus className="w-4 h-4" /> Add Goal
+              </button>
+            </form>
+          </div>
+
+          {/* Active Goals Checklist */}
+          <div className="p-6 rounded-3xl bg-[#FFFFFF] dark:bg-[#2E2C29] border border-[#E3E0D8] dark:border-[#423F3A] shadow-xs space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-[#E3E0D8] dark:border-[#423F3A]">
+              <h3 className="font-serif-claude text-lg font-bold text-[#1F1E1D] dark:text-[#F5F4EF]">
+                Daily Study Checklist ({goals.filter(g => g.is_completed).length} / {goals.length} Completed)
+              </h3>
+              <span className="text-xs text-[#4F7A5C] font-semibold font-mono">
+                {goals.length > 0 ? Math.round((goals.filter(g => g.is_completed).length / goals.length) * 100) : 0}% Target Met
+              </span>
+            </div>
+
+            {goals.length === 0 ? (
+              <div className="py-12 text-center text-sm text-[#6B675F]">
+                No goals added yet. Set a goal above to guide the student's study habits.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {goals.map((goal) => (
+                  <div
+                    key={goal.id}
+                    onClick={() => handleToggleGoal(goal.id)}
+                    className={`p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between shadow-xs ${
+                      goal.is_completed
+                        ? 'border-[#4F7A5C]/40 bg-[#4F7A5C]/10 text-[#4F7A5C]'
+                        : 'border-[#E3E0D8] dark:border-[#423F3A] bg-[#F5F4EF]/40 dark:bg-[#262523]/40 text-[#1F1E1D] dark:text-[#F5F4EF]'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`w-6 h-6 rounded-lg flex items-center justify-center border ${
+                        goal.is_completed ? 'bg-[#4F7A5C] border-[#4F7A5C] text-white' : 'border-[#6B675F]'
+                      }`}>
+                        {goal.is_completed && <CheckCircle className="w-4 h-4" />}
+                      </div>
+                      <div>
+                        <div className={`text-sm font-bold ${goal.is_completed ? 'line-through opacity-80' : ''}`}>
+                          {goal.title}
+                        </div>
+                        <div className="text-xs text-[#6B675F] dark:text-[#A39E93]">
+                          Target: {goal.target_value} ({goal.target_type.replace('_', ' ')})
+                        </div>
+                      </div>
+                    </div>
+
+                    <span className={`px-2.5 py-1 rounded-full text-xs font-bold font-mono ${
+                      goal.is_completed ? 'bg-[#4F7A5C]/20 text-[#4F7A5C]' : 'bg-[#DA7756]/15 text-[#DA7756]'
+                    }`}>
+                      {goal.is_completed ? 'Completed' : 'In Progress'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

@@ -11,7 +11,11 @@ import {
   Loader2, 
   BookOpen,
   Sparkles,
-  Layers
+  Layers,
+  Mic,
+  MicOff,
+  Radio,
+  Volume2
 } from 'lucide-react';
 import { api } from '../services/api';
 
@@ -40,6 +44,66 @@ export default function Courses({
     description: '',
     color: '#DA7756'
   });
+
+  // Audio Lecture Ingestion State
+  const [showAudioModal, setShowAudioModal] = useState(false);
+  const [audioTitle, setAudioTitle] = useState('');
+  const [audioFile, setAudioFile] = useState(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recorderInstance, setRecorderInstance] = useState(null);
+  const [audioUploading, setAudioUploading] = useState(false);
+
+  const startRecordingAudio = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      const chunks = [];
+
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunks.push(e.data);
+      };
+
+      recorder.onstop = () => {
+        const audioBlob = new Blob(chunks, { type: 'audio/wav' });
+        const file = new File([audioBlob], `lecture_record_${Date.now()}.wav`, { type: 'audio/wav' });
+        setAudioFile(file);
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      recorder.start();
+      setRecorderInstance(recorder);
+      setIsRecording(true);
+    } catch (err) {
+      alert(`Microphone access error: ${err.message}`);
+    }
+  };
+
+  const stopRecordingAudio = () => {
+    if (recorderInstance && isRecording) {
+      recorderInstance.stop();
+      setIsRecording(false);
+    }
+  };
+
+  const handleAudioUpload = async (e) => {
+    e.preventDefault();
+    if (!audioFile || !selectedCourseId) return;
+
+    try {
+      setAudioUploading(true);
+      await api.uploadAudioLecture(selectedCourseId, audioFile, audioTitle || 'Recorded Lecture');
+      setShowAudioModal(false);
+      setAudioFile(null);
+      setAudioTitle('');
+      await loadDocuments(selectedCourseId);
+      await loadCourses();
+      alert('Audio lecture transcribed and indexed into FAISS vector database successfully!');
+    } catch (err) {
+      alert(`Audio upload failed: ${err.message}`);
+    } finally {
+      setAudioUploading(false);
+    }
+  };
 
   const loadCourses = async () => {
     try {
@@ -294,6 +358,30 @@ export default function Courses({
             </div>
           </div>
 
+          {/* Audio Lecture Ingestion Banner */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl bg-[#EDEAE1]/70 dark:bg-[#383531]/70 border border-[#E3E0D8] dark:border-[#423F3A]">
+            <div className="flex items-center gap-3.5">
+              <div className="p-3 rounded-2xl bg-[#DA7756]/15 text-[#DA7756] shrink-0">
+                <Radio className="w-6 h-6" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-[#1F1E1D] dark:text-[#F5F4EF]">
+                  Voice Lecture & Audio Memo Ingestion
+                </h4>
+                <p className="text-xs text-[#6B675F] dark:text-[#A39E93] mt-0.5">
+                  Record live lectures or upload audio files (.wav, .mp3, .m4a). Automatically transcribed into structured notes & indexed in FAISS.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowAudioModal(true)}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#DA7756] hover:bg-[#C4633F] text-white text-xs font-bold transition-all shadow-xs cursor-pointer shrink-0"
+            >
+              <Mic className="w-4 h-4" />
+              Record / Ingest Audio Lecture
+            </button>
+          </div>
+
           {/* Ingested Documents List */}
           <div>
             <h3 className="text-xs font-semibold uppercase tracking-wider text-[#6B675F] dark:text-[#A39E93] mb-4">
@@ -537,6 +625,120 @@ export default function Courses({
                   ))
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Audio Lecture Ingestion Modal */}
+      {showAudioModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+          <div className="w-full max-w-lg bg-[#FFFFFF] dark:bg-[#2E2C29] border border-[#E3E0D8] dark:border-[#423F3A] rounded-3xl p-6 shadow-2xl space-y-5">
+            <div className="flex items-center justify-between pb-3 border-b border-[#E3E0D8] dark:border-[#423F3A]">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-[#DA7756]/15 text-[#DA7756]">
+                  <Mic className="w-5 h-5" />
+                </div>
+                <h3 className="font-serif-claude text-xl font-bold text-[#1F1E1D] dark:text-[#F5F4EF]">
+                  Ingest Audio Lecture
+                </h3>
+              </div>
+              <button
+                onClick={() => {
+                  stopRecordingAudio();
+                  setShowAudioModal(false);
+                }}
+                className="text-xs text-[#6B675F] hover:text-[#1F1E1D] dark:hover:text-white cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleAudioUpload} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-[#6B675F] dark:text-[#A39E93] mb-1">
+                  Lecture Title
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g., Lecture 4: Multi-Head Attention & KV Cache"
+                  value={audioTitle}
+                  onChange={(e) => setAudioTitle(e.target.value)}
+                  className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-[#E3E0D8] dark:border-[#423F3A] bg-[#F5F4EF] dark:bg-[#262523] text-[#1F1E1D] dark:text-[#F5F4EF] focus:outline-none focus:border-[#DA7756]"
+                />
+              </div>
+
+              {/* Record Microphone Section */}
+              <div className="p-4 rounded-2xl bg-[#F5F4EF]/60 dark:bg-[#262523]/60 border border-[#E3E0D8] dark:border-[#423F3A] text-center space-y-3">
+                <div className="text-xs font-semibold text-[#6B675F] dark:text-[#A39E93]">
+                  Option 1: Record from Microphone
+                </div>
+                {isRecording ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-center gap-2 text-xs font-bold text-[#D04F4F] animate-pulse">
+                      <span className="w-3 h-3 rounded-full bg-[#D04F4F]" /> Recording live audio...
+                    </div>
+                    <button
+                      type="button"
+                      onClick={stopRecordingAudio}
+                      className="px-4 py-2 rounded-xl bg-[#D04F4F] hover:bg-[#B83E3E] text-white text-xs font-bold transition-all cursor-pointer shadow-xs"
+                    >
+                      <MicOff className="w-4 h-4 inline mr-1.5" /> Stop & Keep Recording
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={startRecordingAudio}
+                    className="px-4 py-2 rounded-xl bg-[#EDEAE1] dark:bg-[#383531] hover:bg-[#DA7756] hover:text-white text-xs font-bold text-[#DA7756] transition-all cursor-pointer shadow-xs inline-flex items-center gap-1.5"
+                  >
+                    <Mic className="w-4 h-4" /> Start Microphone Recording
+                  </button>
+                )}
+                {audioFile && (
+                  <div className="text-xs text-[#4F7A5C] font-semibold flex items-center justify-center gap-1">
+                    <CheckCircle className="w-3.5 h-3.5" /> Audio Ready: {audioFile.name} ({Math.round(audioFile.size / 1024)} KB)
+                  </div>
+                )}
+              </div>
+
+              {/* Upload Audio File Section */}
+              <div className="p-4 rounded-2xl bg-[#F5F4EF]/60 dark:bg-[#262523]/60 border border-[#E3E0D8] dark:border-[#423F3A] space-y-2">
+                <div className="text-xs font-semibold text-[#6B675F] dark:text-[#A39E93]">
+                  Option 2: Upload Audio File (.wav, .mp3, .m4a, .webm)
+                </div>
+                <input
+                  type="file"
+                  accept="audio/*"
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files[0]) {
+                      setAudioFile(e.target.files[0]);
+                      if (!audioTitle) {
+                        setAudioTitle(e.target.files[0].name.replace(/\.[^/.]+$/, ""));
+                      }
+                    }
+                  }}
+                  className="w-full text-xs text-[#6B675F] file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-[#DA7756] file:text-white hover:file:bg-[#C4633F] cursor-pointer"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3">
+                <button
+                  type="button"
+                  onClick={() => setShowAudioModal(false)}
+                  className="px-4 py-2 text-xs font-medium rounded-xl text-[#6B675F] hover:bg-[#EDEAE1] dark:hover:bg-[#383531] transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={!audioFile || audioUploading}
+                  className="px-5 py-2 text-xs font-bold rounded-xl bg-[#DA7756] hover:bg-[#C4633F] text-white transition-colors cursor-pointer shadow-xs disabled:opacity-40 flex items-center gap-1.5"
+                >
+                  {audioUploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+                  {audioUploading ? 'Transcribing & Indexing...' : 'Ingest into FAISS Index'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

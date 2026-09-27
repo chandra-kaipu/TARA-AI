@@ -387,5 +387,108 @@ export const api = {
     });
     if (!res.ok) throw new Error('Failed to generate note explanation');
     return res.json();
+  },
+
+  // 1. Concept Mind Map & Knowledge Graph
+  generateMindMap: async (courseId) => {
+    const res = await fetch(`${API_BASE}/study/mindmap`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ course_id: courseId })
+    });
+    if (!res.ok) throw new Error('Failed to generate mind map');
+    return res.json();
+  },
+
+  // 2. Exam Readiness & Quiz Diagnostic
+  submitQuizResults: async (courseId, topic, total, correct, answersJson = {}) => {
+    const res = await fetch(`${API_BASE}/study/quiz/submit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        course_id: courseId,
+        topic: topic || 'General Practice',
+        total_questions: total,
+        correct_count: correct,
+        answers_json: JSON.stringify(answersJson)
+      })
+    });
+    if (!res.ok) throw new Error('Failed to submit quiz results');
+    return res.json();
+  },
+
+  getExamReadiness: async (courseId) => {
+    const res = await fetch(`${API_BASE}/study/readiness/${courseId}`);
+    if (!res.ok) throw new Error('Failed to load exam readiness');
+    return res.json();
+  },
+
+  // 3. Spaced Repetition Leitner Flashcards
+  drillFlashcard: async (courseId, front, back, result) => {
+    const res = await fetch(`${API_BASE}/study/flashcards/drill`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        course_id: courseId,
+        card_front: front,
+        card_back: back,
+        result
+      })
+    });
+    if (!res.ok) throw new Error('Failed to record flashcard drill');
+    return res.json();
+  },
+
+  getFlashcardsMastery: async (courseId) => {
+    const res = await fetch(`${API_BASE}/study/flashcards/mastery?course_id=${courseId}`);
+    if (!res.ok) throw new Error('Failed to load flashcard mastery');
+    return res.json();
+  },
+
+  // 4. Audio Lecture & Voice Memo Ingestion
+  uploadAudioLecture: async (courseId, file, title = 'Recorded Lecture') => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('title', title);
+
+    const res = await fetch(`${API_BASE}/courses/${courseId}/audio_lecture`, {
+      method: 'POST',
+      body: formData
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Failed to upload audio lecture');
+    }
+    return res.json();
+  },
+
+  // 5. Parental Study Goals & Target Checklist
+  getParentalGoals: async () => {
+    const res = await fetch(`${API_BASE}/parental/goals`);
+    if (!res.ok) throw new Error('Failed to load parental goals');
+    return res.json();
+  },
+
+  createParentalGoal: async (title, targetType = 'study_time', targetValue = 50) => {
+    const res = await fetch(`${API_BASE}/parental/goals`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title,
+        target_type: targetType,
+        target_value: targetValue
+      })
+    });
+    if (!res.ok) throw new Error('Failed to create study goal');
+    return res.json();
+  },
+
+  toggleParentalGoal: async (goalId) => {
+    const res = await fetch(`${API_BASE}/parental/goals/${goalId}/toggle`, {
+      method: 'PUT'
+    });
+    if (!res.ok) throw new Error('Failed to update goal');
+    return res.json();
   }
 };
+

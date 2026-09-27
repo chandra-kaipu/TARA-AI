@@ -7,6 +7,8 @@ dist/
 backend/data/screenshots/*.png
 backend/data/audio_cache/*.mp3
 backend/data/uploads/*_test_lecture_notes.pdf
+backend/data/uploads/*_lecture_sample*
 backend/test_lecture_notes.pdf
+backend/*.png
 .vscode/
 .idea/

@@ -46,7 +46,14 @@ Built with **FastAPI**, **React + Vite**, **FAISS Vector Storage**, **PyMuPDF**,
 - **Multi-Tier Search Engine:** DuckDuckGo live search with fallback to Wikipedia API.
 - **100% Offline Resilience:** If the laptop is disconnected from the internet, TARA seamlessly falls back to an internal academic dictionary and local FAISS vector store. Zero crashes, zero unhandled errors.
 
-### (F) Academic & Institutional Alignment
+### (F) Advanced High-Yield Study & Audio Engines
+- **Interactive Concept Mind Map & Knowledge Graph:** Interactive visual network graph of concepts, formulas, and chapters generated directly from ingested course materials with interactive nodes, SVG graph visualization, and citation drawers.
+- **Exam Readiness Diagnostic & Weakness Heatmap:** Automatic readiness index calculation (0–100%) from quiz attempts with topic breakdown, difficulty categorization, and high-yield focus recommendations.
+- **Flashcard Spaced Repetition (Leitner Box System):** 3-tier box drill ("Got It" / "Need Review") tracking card mastery and deck retention percentages.
+- **Audio Lecture & Voice Memo Ingestion:** Audio recording and lecture file ingestion (`.wav`, `.mp3`, `.m4a`, `.webm`), auto-transcribing spoken lectures into structured academic notes and vectorizing into FAISS.
+- **Parental Daily Goals & Study Contract:** Goal setting, progress tracking, and interactive completion checklist in the Parental Oversight Portal.
+
+### (G) Academic & Institutional Alignment
 - **Institutional Context:** Tailored as a directly deployable study companion for students at **KPRIT (Kommuri Pratap Reddy Institute of Technology)**.
 - **Major Project Specification:** Aligned with Item #6: *"LLM-Powered Voice Assistant Grounded in Course Learning Resources"* (4th Year Major Project).
 - **Evaluation Rubric:** Includes Pilot Evaluation metrics (total queries, grounding rate, student usefulness score, and exportable CSV audit report).
@@ -214,7 +221,7 @@ tara-ai/
 │   │   └── screenshots/          # Captured agent screenshots
 │   ├── requirements.txt
 │   ├── .env.example
-│   └── test_e2e.py               # Comprehensive 23-step verification suite
+│   └── test_e2e.py               # Comprehensive 28-step verification suite
 ├── frontend/
 │   ├── src/
 │   │   ├── components/
@@ -228,39 +235,20 @@ tara-ai/
 │   │   │   └── VoiceContext.jsx  # Wake-word & speech state manager
 │   │   ├── pages/
 │   │   │   ├── Dashboard.jsx     # Overview, stats, and quick actions
-│   │   │   ├── Courses.jsx       # Course manager, PDF ingestion & chunk inspector
-│   │   │   ├── StudyChat.jsx     # Course grounded Q&A, quizzes, flashcards & web clarify
+│   │   │   ├── Courses.jsx       # Course manager, PDF & Audio ingestion, chunk inspector
+│   │   │   ├── StudyChat.jsx     # Grounded Q&A, mind map graph, quiz readiness, Leitner drill
 │   │   │   ├── LaptopNotes.jsx   # Dual-pane PC Markdown scratchpad & AI reviewer
-│   │   │   ├── ParentalPortal.jsx# PIN-protected guardian usage & web monitoring
+│   │   │   ├── ParentalPortal.jsx# PIN-protected guardian usage, web logs & study goals contract
 │   │   │   ├── AgentChat.jsx     # General agent & tool cards
 │   │   │   ├── PilotEvaluation.jsx # KPRIT Major Project evaluation dashboard
 │   │   │   ├── ToolsPermissions.jsx # Tool governance & audit logs
 │   │   │   └── Settings.jsx      # API key indicators & voice sliders
 │   │   ├── services/
-│   │   │   ├── api.js            # API client with parental & notes endpoints
+│   │   │   ├── api.js            # API client with mindmap, readiness, goals & audio endpoints
 │   │   │   └── voice.js          # Web Speech STT/TTS & wake-word engine
 │   │   ├── App.jsx               # Router & global keyboard shortcut listener
 │   │   ├── main.jsx
 │   │   └── index.css             # Claude design tokens & readable typography
-│   ├── package.json
-│   └── vite.config.js
-└── README.md
-```
-│   │   │   └── VoiceContext.jsx  # Wake-word & speech state manager
-│   │   ├── pages/
-│   │   │   ├── Dashboard.jsx     # Overview, stats, and quick actions
-│   │   │   ├── Courses.jsx       # Course manager & PDF ingestion
-│   │   │   ├── StudyChat.jsx     # Course grounded Q&A with citations
-│   │   │   ├── AgentChat.jsx     # General agent & tool cards
-│   │   │   ├── PilotEvaluation.jsx # KPRIT Major Project evaluation dashboard
-│   │   │   ├── ToolsPermissions.jsx # Tool governance & audit logs
-│   │   │   └── Settings.jsx      # API key indicators & voice sliders
-│   │   ├── services/
-│   │   │   ├── api.js            # API client
-│   │   │   └── voice.js          # Web Speech STT/TTS & wake-word engine
-│   │   ├── App.jsx
-│   │   ├── main.jsx
-│   │   └── index.css             # Claude design tokens & typography
 │   ├── package.json
 │   └── vite.config.js
 └── README.md

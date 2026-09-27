@@ -1,5 +1,6 @@
 import sys
 import io
+import uuid
 import requests
 import json
 import fitz  # PyMuPDF
@@ -315,8 +316,152 @@ def run_tests():
     assert "PARENTAL OVERSIGHT REPORT" in parental_csv.text
     print(f"[PASS] 23. Parental CSV Report Export Verified ({len(parental_csv.text)} characters generated).")
 
+    # 24. Test Interactive Concept Mind Map & Knowledge Graph
+    print("\n--- Testing Concept Mind Map & Knowledge Graph Generation ---")
+    mindmap_res = requests.post(f"{BASE_URL}/api/study/mindmap", json={"course_id": course_id})
+    assert mindmap_res.status_code == 200
+    mm_data = mindmap_res.json()
+    assert "nodes" in mm_data and len(mm_data["nodes"]) > 0
+    assert "edges" in mm_data
+    assert mm_data["concept_count"] > 0
+    print(f"[PASS] 24. Concept Mind Map Generated: {mm_data['concept_count']} concepts/nodes, {len(mm_data['edges'])} relational edges.")
+    print(f"   Root Node: '{mm_data['nodes'][0]['label']}' (Category: {mm_data['nodes'][0]['category']})")
+
+    # 25. Test Exam Readiness Diagnostic & Weakness Heatmap
+    print("\n--- Testing Exam Readiness Diagnostic & Weakness Heatmap ---")
+    submit_quiz_res = requests.post(
+        f"{BASE_URL}/api/study/quiz/submit",
+        json={
+            "course_id": course_id,
+            "topic": "Neural Network Fundamentals",
+            "total_questions": 5,
+            "correct_count": 4,
+            "answers_json": json.dumps({"q1": "correct", "q2": "correct", "q3": "correct", "q4": "correct", "q5": "wrong"})
+        }
+    )
+    assert submit_quiz_res.status_code == 200
+    sub_data = submit_quiz_res.json()
+    assert sub_data["score_percentage"] == 80.0
+    print(f"   Quiz Attempt Logged: Score = {sub_data['score_percentage']}% ({sub_data['correct_count']}/{sub_data['total_questions']})")
+
+    readiness_res = requests.get(f"{BASE_URL}/api/study/readiness/{course_id}")
+    assert readiness_res.status_code == 200
+    readiness_data = readiness_res.json()
+    assert readiness_data["readiness_score"] > 0
+    assert len(readiness_data["topic_heatmap"]) > 0
+    assert len(readiness_data["recommended_focus"]) > 0
+    print(f"[PASS] 25. Exam Readiness Diagnostic Verified:")
+    print(f"   Overall Readiness Score: {readiness_data['readiness_score']}% ({readiness_data['readiness_status']})")
+    print(f"   Topics Analyzed: {len(readiness_data['topic_heatmap'])}, Recommendations: {len(readiness_data['recommended_focus'])}")
+
+    # 26. Test Flashcard Spaced Repetition (Leitner Box System)
+    print("\n--- Testing Flashcard Spaced Repetition (Leitner Box Drill) ---")
+    card_suffix = uuid.uuid4().hex[:6]
+    drill_card1 = f"What is Self-Attention? [{card_suffix}]"
+    drill_card2 = f"What is Layer Normalization? [{card_suffix}]"
+
+    drill1 = requests.post(
+        f"{BASE_URL}/api/study/flashcards/drill",
+        json={
+            "course_id": course_id,
+            "card_front": drill_card1,
+            "card_back": "Dynamic token weighting mechanism using Q, K, V matrices.",
+            "result": "got_it"
+        }
+    )
+    assert drill1.status_code == 200
+    assert drill1.json()["box_level"] == 2
+
+    # Advance again to Box 3
+    drill2 = requests.post(
+        f"{BASE_URL}/api/study/flashcards/drill",
+        json={
+            "course_id": course_id,
+            "card_front": drill_card1,
+            "card_back": "Dynamic token weighting mechanism using Q, K, V matrices.",
+            "result": "got_it"
+        }
+    )
+    assert drill2.status_code == 200
+    assert drill2.json()["box_level"] == 3
+
+    # Drill another card with need_review to place in Box 1
+    drill3 = requests.post(
+        f"{BASE_URL}/api/study/flashcards/drill",
+        json={
+            "course_id": course_id,
+            "card_front": drill_card2,
+            "card_back": "Normalizes activations across features within a single sample.",
+            "result": "need_review"
+        }
+    )
+    assert drill3.status_code == 200
+    assert drill3.json()["box_level"] == 1
+
+    # Check mastery metrics
+    mastery_res = requests.get(f"{BASE_URL}/api/study/flashcards/mastery?course_id={course_id}")
+    assert mastery_res.status_code == 200
+    mastery_data = mastery_res.json()
+    assert mastery_data["total_drilled"] >= 2
+    assert mastery_data["box_3_mastered"] >= 1
+    print(f"[PASS] 26. Spaced Repetition Leitner Drill Verified:")
+    print(f"   Total Drilled: {mastery_data['total_drilled']}, Deck Retention Mastery: {mastery_data['mastery_percentage']}%")
+    print(f"   Box 1 (Learning): {mastery_data['box_1_learning']}, Box 2 (Familiar): {mastery_data['box_2_familiar']}, Box 3 (Mastered): {mastery_data['box_3_mastered']}")
+
+    # 27. Test Audio Lecture & Voice Memo Ingestion
+    print("\n--- Testing Voice Lecture & Audio Memo Ingestion ---")
+    import io, wave, struct
+    wav_buf = io.BytesIO()
+    with wave.open(wav_buf, "wb") as wf:
+        wf.setnchannels(1)
+        wf.setsampwidth(2)
+        wf.setframerate(16000)
+        # 0.5s of audio
+        data = struct.pack('<h', 0) * 8000
+        wf.writeframes(data)
+    wav_bytes = wav_buf.getvalue()
+
+    audio_res = requests.post(
+        f"{BASE_URL}/api/courses/{course_id}/audio_lecture",
+        files={"file": ("lecture_sample.wav", wav_bytes, "audio/wav")},
+        data={"title": "Introduction to Attention Mechanisms"}
+    )
+    assert audio_res.status_code == 200
+    audio_data = audio_res.json()
+    assert audio_data["success"] is True
+    assert audio_data["chunk_count"] > 0
+    print(f"[PASS] 27. Voice Lecture Ingested & Transcribed:")
+    print(f"   Lecture Doc ID: {audio_data['document_id']}")
+    print(f"   Vector Chunks Created: {audio_data['chunk_count']}")
+    print(f"   Transcript Preview: {audio_data['transcript_preview'][:100]}...")
+
+    # 28. Test Parental Daily Goals & Study Contract
+    print("\n--- Testing Parental Daily Goals & Study Contract ---")
+    create_goal_res = requests.post(
+        f"{BASE_URL}/api/parental/goals",
+        json={
+            "title": "Complete 3 Leitner Flashcard Repetitions",
+            "target_type": "flashcards",
+            "target_value": 3
+        }
+    )
+    assert create_goal_res.status_code == 200
+    goal_res_data = create_goal_res.json()
+    goal_id = goal_res_data["goal_id"]
+    print(f"   Goal Created: '{goal_res_data['title']}' (ID: {goal_id})")
+
+    goals_list_res = requests.get(f"{BASE_URL}/api/parental/goals")
+    assert goals_list_res.status_code == 200
+    goals = goals_list_res.json()
+    assert any(g["id"] == goal_id for g in goals)
+
+    toggle_res = requests.put(f"{BASE_URL}/api/parental/goals/{goal_id}/toggle")
+    assert toggle_res.status_code == 200
+    assert toggle_res.json()["is_completed"] is True
+    print(f"[PASS] 28. Parental Goal Verified & Toggled (Completed={toggle_res.json()['is_completed']})")
+
     print("\n" + "=" * 60)
-    print("ALL 23 END-TO-END VERIFICATION TESTS PASSED SUCCESSFULLY!")
+    print("ALL 28 END-TO-END VERIFICATION TESTS PASSED SUCCESSFULLY!")
     print("=" * 60)
 
 if __name__ == "__main__":

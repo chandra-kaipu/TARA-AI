@@ -165,11 +165,63 @@ def init_db():
         )
         """)
 
+        # 13. Quiz Attempts & Exam Readiness Tracking
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS quiz_attempts (
+            id TEXT PRIMARY KEY,
+            course_id TEXT NOT NULL,
+            topic TEXT NOT NULL,
+            total_questions INTEGER NOT NULL,
+            correct_count INTEGER NOT NULL,
+            score_percentage REAL NOT NULL,
+            answers_json TEXT NOT NULL,
+            timestamp TEXT NOT NULL
+        )
+        """)
+
+        # 14. Flashcard Spaced Repetition Mastery (Leitner System)
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS flashcard_mastery (
+            id TEXT PRIMARY KEY,
+            course_id TEXT NOT NULL,
+            card_front TEXT NOT NULL,
+            card_back TEXT NOT NULL,
+            box_level INTEGER DEFAULT 1,
+            review_count INTEGER DEFAULT 0,
+            last_result TEXT,
+            updated_at TEXT NOT NULL
+        )
+        """)
+
+        # 15. Parental Study Goals & Objectives
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS parental_goals (
+            id TEXT PRIMARY KEY,
+            title TEXT NOT NULL,
+            target_type TEXT NOT NULL,
+            target_value INTEGER NOT NULL,
+            current_value INTEGER DEFAULT 0,
+            is_completed INTEGER DEFAULT 0,
+            created_at TEXT NOT NULL
+        )
+        """)
+
         # Seed default parental PIN if empty
         cursor.execute("SELECT COUNT(*) FROM parental_settings WHERE key = 'parent_pin'")
         if cursor.fetchone()[0] == 0:
             cursor.execute("INSERT INTO parental_settings (key, value) VALUES ('parent_pin', '1234')")
             cursor.execute("INSERT INTO parental_settings (key, value) VALUES ('daily_limit_minutes', '240')")
+
+        # Seed initial parental goals if empty
+        cursor.execute("SELECT COUNT(*) FROM parental_goals")
+        if cursor.fetchone()[0] == 0:
+            now_iso = datetime.now().isoformat()
+            cursor.execute("""
+            INSERT INTO parental_goals (id, title, target_type, target_value, current_value, is_completed, created_at)
+            VALUES 
+            (?, 'Complete 2 Pomodoro focus sessions (50 mins total)', 'study_time', 50, 25, 0, ?),
+            (?, 'Attempt an AI exam readiness quiz and score 80%+', 'quiz_score', 80, 0, 0, ?)
+            """, (str(uuid.uuid4()), now_iso, str(uuid.uuid4()), now_iso))
 
         # Seed initial study session sample if empty
         cursor.execute("SELECT COUNT(*) FROM study_sessions")

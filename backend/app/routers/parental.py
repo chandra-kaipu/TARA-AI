@@ -233,3 +233,45 @@ def export_parental_report_csv():
         media_type="text/csv",
         headers={"Content-Disposition": f"attachment; filename={filename}"}
     )
+
+class GoalCreateRequest(BaseModel):
+    title: str
+    target_type: str = "study_time" # "study_time", "quiz_score", "focus_blocks"
+    target_value: int
+
+@router.get("/goals")
+def get_parental_goals():
+    """Returns the list of active study goals set by parents/guardians."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM parental_goals ORDER BY created_at DESC")
+        rows = cursor.fetchall()
+        return [dict(r) for r in rows]
+
+@router.post("/goals")
+def create_parental_goal(req: GoalCreateRequest):
+    """Allows parents to set a new study goal or contract target."""
+    goal_id = str(uuid.uuid4())
+    now_iso = datetime.now().isoformat()
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+        INSERT INTO parental_goals (id, title, target_type, target_value, current_value, is_completed, created_at)
+        VALUES (?, ?, ?, ?, 0, 0, ?)
+        """, (goal_id, req.title, req.target_type, req.target_value, now_iso))
+        conn.commit()
+    return {"success": True, "goal_id": goal_id, "title": req.title}
+
+@router.put("/goals/{goal_id}/toggle")
+def toggle_parental_goal(goal_id: str):
+    """Toggles completion status of a parental goal."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT is_completed FROM parental_goals WHERE id = ?", (goal_id,))
+        row = cursor.fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Goal not found")
+        new_val = 0 if row["is_completed"] else 1
+        cursor.execute("UPDATE parental_goals SET is_completed = ? WHERE id = ?", (new_val, goal_id))
+        conn.commit()
+    return {"success": True, "goal_id": goal_id, "is_completed": bool(new_val)}
